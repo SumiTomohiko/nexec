@@ -1,0 +1,5 @@
+
+PROJECT(nexec)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+SUBDIRS(nexec nexecd)
