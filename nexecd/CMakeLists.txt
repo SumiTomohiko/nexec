@@ -1,2 +1,2 @@
 
-ADD_EXECUTABLE(nexecd main.c)
+add_executable(nexecd main.c)

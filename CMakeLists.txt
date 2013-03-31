@@ -1,5 +1,5 @@
 
-PROJECT(nexec)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+project(nexec)
+cmake_minimum_required(VERSION 2.8)
 
-SUBDIRS(nexec nexecd)
+subdirs(nexec nexecd)
