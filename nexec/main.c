@@ -1,4 +1,3 @@
-#include <err.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -80,7 +79,7 @@ main(int argc, char* argv[])
     }
     freeaddrinfo(ai);
     if (sock == -1) {
-        err(1, "socket() failed");
+        die("socket() failed.");
     }
 
     fsyscall_start_slave(sock, sock, argc - 2, argv + 2);
