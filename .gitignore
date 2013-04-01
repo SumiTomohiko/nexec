@@ -2,6 +2,8 @@ CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
+configure.conf
+include/nexec/config.h
 nexec/CMakeFiles
 nexec/Makefile
 nexec/cmake_install.cmake

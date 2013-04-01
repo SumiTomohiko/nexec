@@ -1,5 +1,18 @@
 
 project(nexec)
+set(NEXEC_VERSION \"1.0.0dev1\")
+
 cmake_minimum_required(VERSION 2.8)
 
+option(FSYSCALL_DIR "fsyscall source directory" "${HOME}/projects/fsyscall2")
+
+set(CMAKE_VERBOSE_MAKEFILE true)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -O3")
+set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+include_directories(${INCLUDE_DIR} ${FSYSCALL_DIR}/include)
+configure_file(${INCLUDE_DIR}/nexec/config.h.in ${INCLUDE_DIR}/nexec/config.h)
+
 subdirs(nexec nexecd)
+
+# vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4

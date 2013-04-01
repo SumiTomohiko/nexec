@@ -1,0 +1,17 @@
+#!/bin/sh
+
+dir=$(dirname $0)
+opts=""
+cat "${dir}/configure.conf" \
+    | sed -e "s/ *#.*\$//" \
+    | grep -v "^ *\$" \
+    | sed -e "s/ *: */ /" | awk '{
+    printf("-D%s=%s\n", toupper($1), $2)
+}' | while read opt
+do
+    opts="${opts} ${opt}"
+done
+
+exec cmake ${opts} "${dir}"
+
+# vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4

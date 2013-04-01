@@ -1,0 +1,9 @@
+#if !defined(NEXEC_CONFIG_H_INCLUDED)
+#define NEXEC_CONFIG_H_INCLUDED
+
+#define NEXEC_VERSION @NEXEC_VERSION@
+
+#endif
+/**
+ * vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
+ */
