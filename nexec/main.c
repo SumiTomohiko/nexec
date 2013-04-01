@@ -1,3 +1,4 @@
+#include <err.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -82,7 +83,12 @@ main(int argc, char* argv[])
         die("socket() failed.");
     }
 
-    fsyscall_start_slave(sock, sock, argc - 2, argv + 2);
+    int wfd = dup(sock);
+    if (wfd == -1) {
+        err(1, "dup() failed");
+    }
+    /* TODO: Send argv. */
+    fsyscall_start_slave(sock, wfd, argc - 2, argv + 2);
     /* NOTREACHED */
 
     return 0;
