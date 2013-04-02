@@ -1,5 +1,6 @@
 #include <err.h>
 #include <errno.h>
+#include <getopt.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -49,14 +50,14 @@ make_connected_socket(struct addrinfo* ai)
     return sock;
 }
 
-int
-main(int argc, char* argv[])
+static void
+nexec_main(int argc, char* argv[])
 {
-    if (argc < 3) {
+    if (argc < 2) {
         usage();
         exit(1);
     }
-    const char* s = argv[1];
+    const char* s = argv[0];
     char buf[strlen(s) + 1];
     strcpy(buf, s);
     char* p = strrchr(buf, ':');
@@ -90,8 +91,28 @@ main(int argc, char* argv[])
         err(1, "dup() failed");
     }
     /* TODO: Send argv. */
-    fsyscall_start_slave(sock, wfd, argc - 2, argv + 2);
+    fsyscall_start_slave(sock, wfd, argc - 1, argv + 1);
     /* NOTREACHED */
+}
+
+int
+main(int argc, char* argv[])
+{
+    struct option opts[] = {
+        { "version", no_argument, NULL, 'v' },
+        { NULL, 0, NULL, 0 } };
+    int opt;
+    while ((opt = getopt_long(argc, argv, "v", opts, NULL)) != -1) {
+        switch (opt) {
+        case 'v':
+            printf("%s %s\n", getprogname(), NEXEC_VERSION);
+            return 0;
+        default:
+            break;
+        }
+    }
+
+    nexec_main(argc - optind, argv + optind);
 
     return 0;
 }
