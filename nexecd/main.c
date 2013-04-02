@@ -3,10 +3,13 @@
 #include <getopt.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -99,6 +102,24 @@ start_master(int rfd)
     /* NOTREACHED */
 }
 
+static bool
+wait_client(int fd)
+{
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    return 0 < select(fd + 1, &fds, NULL, NULL, NULL) ? true : false;
+}
+
+static bool terminated = false;
+
+static void
+signal_handler(int sig)
+{
+    assert(sig == SIGTERM);
+    terminated = true;
+}
+
 static void
 nexecd_main()
 {
@@ -129,14 +150,17 @@ nexecd_main()
     if (daemon(0, 0) != 0) {
         err(1, "daemon() failed");
     }
+    signal(SIGTERM, signal_handler);
 
     syslog(LOG_INFO, "Started.");
 
-    int fd;
-    struct sockaddr_storage storage;
-    struct sockaddr* addr = (struct sockaddr*)&storage;
-    socklen_t addrlen;
-    while ((fd = accept(sock, addr, &addrlen)) != -1) {
+    while (!terminated && wait_client(sock)) {
+        struct sockaddr_storage storage;
+        struct sockaddr* addr = (struct sockaddr*)&storage;
+        socklen_t addrlen = sizeof(storage);
+        int fd = accept(sock, addr, &addrlen);
+        assert(fd != -1);
+
         char host[NI_MAXHOST], serv[NI_MAXSERV];
         int ecode = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV);
         if (ecode != 0) {
@@ -158,7 +182,10 @@ nexecd_main()
             break;
         }
     }
+
     close(sock);
+
+    syslog(LOG_INFO, "Terminated.");
 }
 
 int
