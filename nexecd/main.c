@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <syslog.h>
 #include <unistd.h>
 
 #include <fsyscall/start_master.h>
@@ -128,8 +129,20 @@ nexecd_main()
         err(1, "daemon() failed");
     }
 
+    syslog(LOG_INFO, "Started.");
+
     int fd;
-    while ((fd = accept(sock, NULL, 0)) != -1) {
+    struct sockaddr_storage storage;
+    struct sockaddr* addr = (struct sockaddr*)&storage;
+    socklen_t addrlen;
+    while ((fd = accept(sock, addr, &addrlen)) != -1) {
+        char host[NI_MAXHOST], serv[NI_MAXSERV];
+        int ecode = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV);
+        if (ecode != 0) {
+            die("getnameinfo() failed: %s", gai_strerror(ecode));
+        }
+        syslog(LOG_INFO, "Accepted: host=%s, port=%s", host, serv);
+
         pid_t pid = fork();
         assert(pid != -1);
         int status;
@@ -164,7 +177,9 @@ main(int argc, char* argv[])
         }
     }
 
+    openlog(getprogname(), LOG_PID, LOG_USER);
     nexecd_main();
+    closelog();
 
     return 0;
 }
