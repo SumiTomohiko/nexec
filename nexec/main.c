@@ -32,7 +32,7 @@ die(const char* fmt, ...)
 static void
 usage()
 {
-    printf("Usage: %s hostname:port command...\n", getprogname());
+    printf("Usage: %s hostname[:port] command...\n", getprogname());
 }
 
 static int
@@ -60,9 +60,11 @@ main(int argc, char* argv[])
     char buf[strlen(s) + 1];
     strcpy(buf, s);
     char* p = strrchr(buf, ':');
-    p[0] = '\0';
+    if (p != NULL) {
+        *p = '\0';
+    }
     const char* hostname = buf;
-    const char* servname = &p[1];
+    const char* servname = p != NULL ? &p[1] : NEXEC_DEFAULT_PORT;
     struct addrinfo hints;
     bzero(&hints, sizeof(hints));
     hints.ai_family = PF_INET;
