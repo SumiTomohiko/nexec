@@ -1,9 +1,11 @@
+#include <assert.h>
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,6 +53,56 @@ make_connected_socket(struct addrinfo* ai)
 }
 
 static void
+write_all(int wfd, const void* buf, size_t bufsize)
+{
+    size_t nbytes = 0;
+    while (nbytes < bufsize) {
+        const void* p = (void*)((uintptr_t)buf + nbytes);
+        ssize_t n = write(wfd, p, bufsize - nbytes);
+        if (n == -1) {
+            err(1, "Cannot write data");
+        }
+        nbytes += n;
+    }
+}
+
+static void
+write32(int wfd, uint32_t n)
+{
+    uint32_t datum = htonl(n);
+    write_all(wfd, &datum, sizeof(datum));
+}
+
+static void
+write_string(int wfd, const char* s)
+{
+    size_t len = strlen(s);
+    if (UINT32_MAX < len) {
+        die("A string is too long (%lu).", len);
+    }
+    write32(wfd, len);
+    write_all(wfd, s, len);
+}
+
+static void
+start_slave(int rfd, int argc, char* argv[])
+{
+    int wfd = dup(rfd);
+    if (wfd == -1) {
+        err(1, "dup() failed");
+    }
+
+    write32(wfd, argc);
+    int i;
+    for (i = 0; i < argc; i++) {
+        write_string(wfd, argv[i]);
+    }
+
+    fsyscall_start_slave(rfd, wfd, argc, argv);
+    /* NOTREACHED */
+}
+
+static void
 nexec_main(int argc, char* argv[])
 {
     if (argc < 2) {
@@ -86,13 +138,7 @@ nexec_main(int argc, char* argv[])
         die("socket() failed.");
     }
 
-    int wfd = dup(sock);
-    if (wfd == -1) {
-        err(1, "dup() failed");
-    }
-    /* TODO: Send argv. */
-    fsyscall_start_slave(sock, wfd, argc - 1, argv + 1);
-    /* NOTREACHED */
+    start_slave(sock, argc - 1, argv + 1);
 }
 
 int

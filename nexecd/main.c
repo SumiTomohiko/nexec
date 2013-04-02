@@ -53,6 +53,52 @@ make_bound_socket(struct addrinfo* ai)
 }
 
 static void
+read_all(int rfd, void* dest, size_t size)
+{
+    size_t nbytes = 0;
+    while (nbytes < size) {
+        void* p = (void*)((uintptr_t)dest + nbytes);
+        ssize_t n = read(rfd, p, size - nbytes);
+        if (n == -1) {
+            err(1, "Cannot read data");
+        }
+        nbytes += n;
+    }
+}
+
+static unsigned int
+read32(int rfd)
+{
+    unsigned int n;
+    read_all(rfd, &n, sizeof(n));
+    return ntohl(n);
+}
+
+static void
+start_master(int rfd)
+{
+    int wfd = dup(rfd);
+    if (wfd == -1) {
+        err(1, "dup() failed");
+    }
+
+    unsigned int argc = read32(rfd);
+    char* argv[argc];
+    unsigned int i;
+    for (i = 0; i < argc; i++) {
+        unsigned int len = read32(rfd);
+        char* p = (char*)malloc(len + 1);
+        assert(p != NULL);
+        read_all(rfd, p, len);
+        p[len] = '\0';
+        argv[i] = p;
+    }
+
+    fsyscall_start_master(rfd, wfd, argc, argv);
+    /* NOTREACHED */
+}
+
+static void
 nexecd_main()
 {
     struct addrinfo hints;
@@ -87,19 +133,9 @@ nexecd_main()
         pid_t pid = fork();
         assert(pid != -1);
         int status;
-        int wfd;
-        char* args[] = { "/bin/echo", "foo" };
         switch (pid) {
         case 0:
-            wfd = dup(fd);
-            if (wfd == -1) {
-                err(1, "dup() failed");
-            }
-#if 0
-            fsyscall_start_master(fd, wfd, argc - 1, argv + 1);
-#endif
-            fsyscall_start_master(fd, wfd, 2, args);
-            /* NOTREACHED */
+            start_master(fd);
             break;
         default:
             close(fd);
