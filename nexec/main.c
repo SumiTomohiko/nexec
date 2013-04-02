@@ -12,6 +12,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <syslog.h>
 #include <unistd.h>
 
 #include <fsyscall/start_slave.h>
@@ -103,12 +104,32 @@ start_slave(int rfd, int argc, char* argv[])
 }
 
 static void
+log_starting(int argc, char* argv[])
+{
+    char buf[512];
+    snprintf(buf, sizeof(buf), "%s", getprogname());
+
+    int pos = strlen(buf);
+    int i;
+    for (i = 0; i < argc; i++) {
+        const char* s = argv[i];
+        size_t len = strlen(s);
+        snprintf(buf + pos, sizeof(buf) - pos, " %s", s);
+        pos += len + 1;
+    }
+
+    syslog(LOG_INFO, "Started: %s", buf);
+}
+
+static void
 nexec_main(int argc, char* argv[])
 {
     if (argc < 2) {
         usage();
         exit(1);
     }
+    log_starting(argc, argv);
+
     const char* s = argv[0];
     char buf[strlen(s) + 1];
     strcpy(buf, s);
@@ -138,6 +159,8 @@ nexec_main(int argc, char* argv[])
         die("socket() failed.");
     }
 
+    syslog(LOG_INFO, "Connected: host=%s, service=%s", hostname, servname);
+
     start_slave(sock, argc - 1, argv + 1);
 }
 
@@ -158,7 +181,9 @@ main(int argc, char* argv[])
         }
     }
 
+    openlog(getprogname(), LOG_PID, LOG_USER);
     nexec_main(argc - optind, argv + optind);
+    closelog();
 
     return 0;
 }
