@@ -4,7 +4,7 @@ set(NEXEC_VERSION \"1.0.0dev1\")
 
 cmake_minimum_required(VERSION 2.8)
 
-option(FSYSCALL_DIR "fsyscall source directory" "${HOME}/projects/fsyscall2")
+option(FSYSCALL_DIR "fsyscall source directory" ${HOME}/projects/fsyscall2)
 
 set(CMAKE_VERBOSE_MAKEFILE true)
 set(CMAKE_C_COMPILER clang)
