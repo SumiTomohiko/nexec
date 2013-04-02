@@ -104,7 +104,7 @@ nexecd_main()
 {
     struct addrinfo hints;
     bzero(&hints, sizeof(hints));
-    hints.ai_family = PF_INET;
+    hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     struct addrinfo* ai;

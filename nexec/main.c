@@ -141,7 +141,7 @@ nexec_main(int argc, char* argv[])
     const char* servname = p != NULL ? &p[1] : NEXEC_DEFAULT_PORT;
     struct addrinfo hints;
     bzero(&hints, sizeof(hints));
-    hints.ai_family = PF_INET;
+    hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     struct addrinfo* ai;
