@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <err.h>
+#include <getopt.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -51,8 +52,8 @@ make_bound_socket(struct addrinfo* ai)
     return sock;
 }
 
-int
-main(/*int argc, char* argv[]*/)
+static void
+nexecd_main()
 {
     struct addrinfo hints;
     bzero(&hints, sizeof(hints));
@@ -108,6 +109,26 @@ main(/*int argc, char* argv[]*/)
         }
     }
     close(sock);
+}
+
+int
+main(int argc, char* argv[])
+{
+    struct option opts[] = {
+        { "version", no_argument, NULL, 'v' },
+        { NULL, 0, NULL, 0 } };
+    int opt;
+    while ((opt = getopt_long(argc, argv, "v", opts, NULL)) != -1) {
+        switch (opt) {
+        case 'v':
+            printf("%s %s\n", getprogname(), NEXEC_VERSION);
+            return 0;
+        default:
+            break;
+        }
+    }
+
+    nexecd_main();
 
     return 0;
 }
