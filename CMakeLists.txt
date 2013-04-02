@@ -1,6 +1,7 @@
 
 project(nexec)
 set(NEXEC_VERSION \"1.0.0dev1\")
+set(NEXEC_DEFAULT_PORT \"57005\")
 
 cmake_minimum_required(VERSION 2.8)
 
