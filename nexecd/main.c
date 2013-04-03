@@ -42,16 +42,14 @@ make_bound_socket(struct addrinfo* ai)
 {
     int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
-        return sock;
+        err(1, "socket() failed");
     }
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
         err(1, "setsockopt() failed");
     }
     if (bind(sock, ai->ai_addr, ai->ai_addrlen) != 0) {
-        warn("bind() failed");
-        close(sock);
-        return -1;
+        err(1, "bind() failed");
     }
     return sock;
 }
@@ -102,13 +100,30 @@ start_master(int rfd)
     /* NOTREACHED */
 }
 
-static bool
-wait_client(int fd)
+static int
+wait_client(int socks[], int nsock)
 {
     fd_set fds;
     FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    return 0 < select(fd + 1, &fds, NULL, NULL, NULL) ? true : false;
+    int i;
+    for (i = 0; i < nsock; i++) {
+        FD_SET(socks[i], &fds);
+    }
+    assert(0 < nsock);
+    int max = socks[0];
+    for (i = 1; i < nsock; i++) {
+        int sock = socks[i];
+        max = max < sock ? sock : max;
+    }
+    if (select(max + 1, &fds, NULL, NULL, NULL) == -1) {
+        return -1;
+    }
+    int sock = -1;
+    for (i = 0; (i < nsock) && (sock == -1); i++) {
+        int fd = socks[i];
+        sock = FD_ISSET(fd, &fds) ? fd : -1;
+    }
+    return sock;
 }
 
 static bool terminated = false;
@@ -118,6 +133,14 @@ signal_handler(int sig)
 {
     assert(sig == SIGTERM);
     terminated = true;
+}
+
+static void
+listen_or_die(int sock)
+{
+    if (listen(sock, 0) != 0) {
+        err(1, "listen() failed for socket %d", sock);
+    }
 }
 
 static void
@@ -134,17 +157,19 @@ nexecd_main()
     if (ecode != 0) {
         die("getaddrinfo() failed: %s", gai_strerror(ecode));
     }
-    int sock = -1;
+    int nsock = 0;
     struct addrinfo* res;
-    for (res = ai; (res != NULL) && (sock == -1); res = res->ai_next) {
-        sock = make_bound_socket(res);
+    for (res = ai; res != NULL; res = res->ai_next) {
+        nsock++;
+    }
+    int socks[nsock];
+    int i;
+    for (res = ai, i = 0; res != NULL; res = res->ai_next, i++) {
+        socks[i] = make_bound_socket(res);
     }
     freeaddrinfo(ai);
-    if (sock == -1) {
-        die("Cannot bind.");
-    }
-    if (listen(sock, 0) != 0) {
-        err(1, "listen() failed");
+    for (i = 0; i < nsock; i++) {
+        listen_or_die(socks[i]);
     }
     if (signal(SIGTERM, signal_handler) == SIG_ERR) {
         err(1, "signal() failed");
@@ -156,7 +181,8 @@ nexecd_main()
 
     syslog(LOG_INFO, "Started.");
 
-    while (!terminated && wait_client(sock)) {
+    int sock;
+    while (!terminated && ((sock = wait_client(socks, nsock)) != -1)) {
         struct sockaddr_storage storage;
         struct sockaddr* addr = (struct sockaddr*)&storage;
         socklen_t addrlen = sizeof(storage);
@@ -185,7 +211,9 @@ nexecd_main()
         }
     }
 
-    close(sock);
+    for (i = 0; i < nsock; i++) {
+        close(socks[i]);
+    }
 
     syslog(LOG_INFO, "Terminated.");
 }
