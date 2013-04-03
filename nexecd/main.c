@@ -146,11 +146,13 @@ nexecd_main()
     if (listen(sock, 0) != 0) {
         err(1, "listen() failed");
     }
+    if (signal(SIGTERM, signal_handler) == SIG_ERR) {
+        err(1, "signal() failed");
+    }
 
     if (daemon(0, 0) != 0) {
         err(1, "daemon() failed");
     }
-    signal(SIGTERM, signal_handler);
 
     syslog(LOG_INFO, "Started.");
 
