@@ -1,8 +1,9 @@
+/Makefile
 CMakeCache.txt
 CMakeFiles
-Makefile
 cmake_install.cmake
 configure.conf
+doc/index.html
 include/nexec/config.h
 nexec/CMakeFiles
 nexec/Makefile
