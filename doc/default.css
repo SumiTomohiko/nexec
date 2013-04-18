@@ -4,6 +4,10 @@ body {
     font-size: x-large;
 }
 
+h1.title {
+    text-align: center;
+}
+
 div.section > h1 {
     border-bottom-style: solid;
 }
