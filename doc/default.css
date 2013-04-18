@@ -15,6 +15,12 @@ div.section > h2 {
     padding-left: 8px;
 }
 
+div.contents {
+    border-style: solid;
+    margin-left: 48px;
+    margin-right: 48px;
+}
+
 h1 > a, h2 > a {
     text-decoration: none;
 }
@@ -38,6 +44,10 @@ pre {
 
 ul, ol {
     margin-left: 64px;
+}
+
+li > ul, li > ol {
+    margin-left: 8px;
 }
 
 /**
