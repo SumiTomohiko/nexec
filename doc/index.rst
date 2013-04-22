@@ -63,13 +63,22 @@ see the following stdout::
 
     foo bar baz quux
 
-License
-=======
+Anything else
+=============
 
-nexec is under the MIT license.
+License
+-------
+
+nexec is under `the MIT license
+<http://github.com/SumiTomohiko/nexec/blob/master/COPYING.rst#mit-license>`_.
+
+GitHub repository
+-----------------
+
+GitHub repository of nexec is http://github.com/SumiTomohiko/nexec.
 
 Author
-======
+------
 
 The author of nexec is
 `Tomohiko Sumi <http://neko-daisuki.ddo.jp/~SumiTomohiko/index.html>`_.
