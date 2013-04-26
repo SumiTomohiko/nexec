@@ -24,7 +24,9 @@ Install fsyscall
 
 nexec requires fsyscall in both of a local machine and a remote machine. Please
 install fsyscall with following `the fsyscall documentation
-<http://neko-daisuki.ddo.jp/~SumiTomohiko/fsyscall/index.html>`_.
+<http://neko-daisuki.ddo.jp/~SumiTomohiko/fsyscall/index.html>`_. fmaster.ko and
+fmhub must be installed into a server, fslave and fshub must be installed into
+a client.
 
 Compile nexec
 -------------
