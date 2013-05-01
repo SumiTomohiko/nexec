@@ -65,6 +65,8 @@ see the following stdout::
 
     foo bar baz quux
 
+.. attention:: The current version supports only /bin/echo.
+
 Anything else
 =============
 
