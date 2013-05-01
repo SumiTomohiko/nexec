@@ -19,7 +19,8 @@ program, and nexecd is the server one.
 Download
 ========
 
-Tarballs (nexec-x.y.z.tar.xz) are available at `the author's repository <http://neko-daisuki.ddo.jp/~SumiTomohiko/repos/index.html>`_.
+Tarballs (nexec-*x.y.z*.tar.xz) are available at `the author's repository
+<http://neko-daisuki.ddo.jp/~SumiTomohiko/repos/index.html>`_.
 
 How to install and prepare
 ==========================
