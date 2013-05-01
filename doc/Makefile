@@ -1,5 +1,5 @@
 
-all: index.html
+all: index.html install.png
 
 .SUFFIXES: .rst .html .svg .png
 

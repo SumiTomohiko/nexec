@@ -28,6 +28,8 @@ install fsyscall with following `the fsyscall documentation
 fmhub must be installed into a server, fslave and fshub must be installed into
 a client.
 
+.. image:: install.png
+
 Compile nexec
 -------------
 

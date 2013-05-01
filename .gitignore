@@ -4,6 +4,7 @@ CMakeFiles
 cmake_install.cmake
 configure.conf
 doc/index.html
+doc/install.png
 include/nexec/config.h
 nexec/CMakeFiles
 nexec/Makefile
