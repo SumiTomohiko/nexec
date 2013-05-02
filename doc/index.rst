@@ -16,6 +16,11 @@ read/write files in your machine.
 nexec consists of two executables -- nexec and nexecd. nexec is the client
 program, and nexecd is the server one.
 
+Requirements
+============
+
+nexec (and fsyscall) works on FreeBSD/amd64.
+
 Download
 ========
 
