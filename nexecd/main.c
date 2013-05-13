@@ -62,7 +62,7 @@ read_all(int rfd, void* dest, size_t size)
         void* p = (void*)((uintptr_t)dest + nbytes);
         ssize_t n = read(rfd, p, size - nbytes);
         if (n == -1) {
-            err(1, "Cannot read data");
+            err(1, "cannot read data");
         }
         nbytes += n;
     }
@@ -179,7 +179,7 @@ nexecd_main()
         err(1, "daemon() failed");
     }
 
-    syslog(LOG_INFO, "Started.");
+    syslog(LOG_INFO, "started.");
 
     int sock;
     while (!terminated && ((sock = wait_client(socks, nsock)) != -1)) {
@@ -194,7 +194,7 @@ nexecd_main()
         if (ecode != 0) {
             die("getnameinfo() failed: %s", gai_strerror(ecode));
         }
-        syslog(LOG_INFO, "Accepted: host=%s, port=%s", host, serv);
+        syslog(LOG_INFO, "accepted: host=%s, port=%s", host, serv);
 
         pid_t pid = fork();
         assert(pid != -1);
@@ -215,7 +215,7 @@ nexecd_main()
         close(socks[i]);
     }
 
-    syslog(LOG_INFO, "Terminated.");
+    syslog(LOG_INFO, "terminated.");
 }
 
 int

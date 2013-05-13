@@ -36,7 +36,7 @@ die(const char* fmt, ...)
 static void
 usage()
 {
-    printf("Usage: %s hostname[:port] command...\n", getprogname());
+    printf("usage: %s hostname[:port] command...\n", getprogname());
 }
 
 static int
@@ -70,7 +70,7 @@ write_all(int wfd, const void* buf, size_t bufsize)
         const void* p = (void*)((uintptr_t)buf + nbytes);
         ssize_t n = write(wfd, p, bufsize - nbytes);
         if (n == -1) {
-            err(1, "Cannot write data");
+            err(1, "cannot write data");
         }
         nbytes += n;
     }
@@ -88,7 +88,7 @@ write_string(int wfd, const char* s)
 {
     size_t len = strlen(s);
     if (UINT32_MAX < len) {
-        die("A string is too long (%lu).", len);
+        die("the string is too long (%lu).", len);
     }
     write32(wfd, len);
     write_all(wfd, s, len);
@@ -127,7 +127,7 @@ log_starting(int argc, char* argv[])
         pos += len + 1;
     }
 
-    syslog(LOG_INFO, "Started: %s", buf);
+    syslog(LOG_INFO, "started: %s", buf);
 }
 
 static void
@@ -165,10 +165,10 @@ nexec_main(int argc, char* argv[])
     }
     freeaddrinfo(ai);
     if (sock == -1) {
-        die("socket() failed.");
+        die("connecting to nexecd failed.");
     }
 
-    syslog(LOG_INFO, "Connected: host=%s, service=%s", hostname, servname);
+    syslog(LOG_INFO, "connected: host=%s, service=%s", hostname, servname);
 
     start_slave(sock, argc - 1, argv + 1);
 }
