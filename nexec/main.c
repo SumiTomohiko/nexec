@@ -50,7 +50,7 @@ make_connected_socket(struct addrinfo* ai)
     struct sockaddr* sa = ai->ai_addr;
     socklen_t salen = ai->ai_addrlen;
     if (connect(sock, sa, salen) != 0) {
-        e = errno;
+        int e = errno;
         char host[NI_MAXHOST];
         char serv[NI_MAXSERV];
         getnameinfo(sa, salen, host, sizeof(host), serv, sizeof(serv), 0);
