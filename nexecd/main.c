@@ -225,7 +225,7 @@ main(int argc, char* argv[])
         { "version", no_argument, NULL, 'v' },
         { NULL, 0, NULL, 0 } };
     int opt;
-    while ((opt = getopt_long(argc, argv, "v", opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "+v", opts, NULL)) != -1) {
         switch (opt) {
         case 'v':
             printf("%s %s\n", getprogname(), NEXEC_VERSION);
