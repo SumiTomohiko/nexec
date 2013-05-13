@@ -44,9 +44,18 @@ make_connected_socket(struct addrinfo* ai)
 {
     int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
+        warn("socket() failed");
         return sock;
     }
-    if (connect(sock, ai->ai_addr, ai->ai_addrlen) != 0) {
+    struct sockaddr* sa = ai->ai_addr;
+    socklen_t salen = ai->ai_addrlen;
+    if (connect(sock, sa, salen) != 0) {
+        e = errno;
+        char host[NI_MAXHOST];
+        char serv[NI_MAXSERV];
+        getnameinfo(sa, salen, host, sizeof(host), serv, sizeof(serv), 0);
+        /* Ignore error of getnameinfo(3). Failing of getnameinfo(3) is rare? */
+        warnc(e, "cannot connect to %s:%s", host, serv);
         close(sock);
         return -1;
     }
