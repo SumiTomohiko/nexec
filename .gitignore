@@ -6,6 +6,8 @@ configure.conf
 doc/index.html
 doc/install.png
 include/nexec/config.h
+java/bin
+jp.gr.java_conf.neko_daisuki.nexec.client
 nexec/CMakeFiles
 nexec/Makefile
 nexec/cmake_install.cmake

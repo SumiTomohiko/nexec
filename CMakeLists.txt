@@ -17,5 +17,7 @@ configure_file(${INCLUDE_DIR}/nexec/config.h.in ${INCLUDE_DIR}/nexec/config.h)
 subdirs(nexec nexecd)
 
 add_custom_target(doc COMMAND cd doc && make)
+add_custom_target(java COMMAND cd java && ant)
+add_custom_target(java-clean COMMAND cd java && rm -rf bin)
 
 # vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
