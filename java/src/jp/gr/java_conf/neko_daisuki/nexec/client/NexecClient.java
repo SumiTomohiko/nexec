@@ -3,6 +3,7 @@ package jp.gr.java_conf.neko_daisuki.nexec.client;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
@@ -11,7 +12,7 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 
 public class NexecClient {
 
-    public void run(String server, int port, String[] args) throws InterruptedException, IOException {
+    public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr) throws InterruptedException, IOException {
         Socket sock = new Socket(server, port);
         try {
             OutputStream out = sock.getOutputStream();
@@ -23,7 +24,8 @@ public class NexecClient {
                 dataOut.write(bytes);
             }
 
-            new Application().run(sock.getInputStream(), out);
+            InputStream in = sock.getInputStream();
+            new Application().run(in, out, stdin, stdout, stderr);
         }
         finally {
             sock.close();
@@ -35,8 +37,9 @@ public class NexecClient {
         int port = Integer.parseInt(args[1]);
         String[] params = Arrays.copyOfRange(args, 2, args.length);
 
+        NexecClient client = new NexecClient();
         try {
-            new NexecClient().run(server, port, params);
+            client.run(server, port, params, System.in, System.out, System.err);
         }
         catch (Exception e) {
             e.printStackTrace();
