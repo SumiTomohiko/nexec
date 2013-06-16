@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <err.h>
+#include <errno.h>
 #include <getopt.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -42,14 +42,14 @@ make_bound_socket(struct addrinfo* ai)
 {
     int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
-        err(1, "socket() failed");
+        die("socket() failed: %s", strerror(errno));
     }
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
-        err(1, "setsockopt() failed");
+        die("setsockopt() failed: %s", strerror(errno));
     }
     if (bind(sock, ai->ai_addr, ai->ai_addrlen) != 0) {
-        err(1, "bind() failed");
+        die("bind() failed: %s", strerror(errno));
     }
     return sock;
 }
@@ -93,7 +93,7 @@ static void
 listen_or_die(int sock)
 {
     if (listen(sock, 0) != 0) {
-        err(1, "listen() failed for socket %d", sock);
+        die("listen() failed for socket %d: %s", sock, strerror(errno));
     }
 }
 
@@ -126,11 +126,11 @@ nexecd_main()
         listen_or_die(socks[i]);
     }
     if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-        err(1, "signal() failed");
+        die("signal() failed: %s", strerror(errno));
     }
 
     if (daemon(0, 0) != 0) {
-        err(1, "daemon() failed");
+        die("daemon() failed: %s", strerror(errno));
     }
 
     syslog(LOG_INFO, "started.");
@@ -141,7 +141,9 @@ nexecd_main()
         struct sockaddr* addr = (struct sockaddr*)&storage;
         socklen_t addrlen = sizeof(storage);
         int fd = accept(sock, addr, &addrlen);
-        assert(fd != -1);
+        if (fd == -1) {
+            die("accept() failed: %s", strerror(errno));
+        }
 
         char host[NI_MAXHOST], serv[NI_MAXSERV];
         int ecode = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV);
@@ -151,7 +153,9 @@ nexecd_main()
         syslog(LOG_INFO, "accepted: host=%s, port=%s", host, serv);
 
         pid_t pid = fork();
-        assert(pid != -1);
+        if (pid == -1) {
+            die("fork() failed: %s", strerror(errno));
+        }
         int status;
         switch (pid) {
         case 0:
