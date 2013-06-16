@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -16,9 +17,8 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <fsyscall/start_master.h>
-
 #include <nexec/config.h>
+#include <nexec/nexecd.h>
 
 /**
  * TODO: Share this function with nexec.
@@ -52,52 +52,6 @@ make_bound_socket(struct addrinfo* ai)
         err(1, "bind() failed");
     }
     return sock;
-}
-
-static void
-read_all(int rfd, void* dest, size_t size)
-{
-    size_t nbytes = 0;
-    while (nbytes < size) {
-        void* p = (void*)((uintptr_t)dest + nbytes);
-        ssize_t n = read(rfd, p, size - nbytes);
-        if (n == -1) {
-            err(1, "cannot read data");
-        }
-        nbytes += n;
-    }
-}
-
-static unsigned int
-read32(int rfd)
-{
-    unsigned int n;
-    read_all(rfd, &n, sizeof(n));
-    return ntohl(n);
-}
-
-static void
-start_master(int rfd)
-{
-    int wfd = dup(rfd);
-    if (wfd == -1) {
-        err(1, "dup() failed");
-    }
-
-    unsigned int argc = read32(rfd);
-    char* argv[argc];
-    unsigned int i;
-    for (i = 0; i < argc; i++) {
-        unsigned int len = read32(rfd);
-        char* p = (char*)malloc(len + 1);
-        assert(p != NULL);
-        read_all(rfd, p, len);
-        p[len] = '\0';
-        argv[i] = p;
-    }
-
-    fsyscall_start_master(rfd, wfd, argc, argv);
-    /* NOTREACHED */
 }
 
 static int
@@ -201,7 +155,7 @@ nexecd_main()
         int status;
         switch (pid) {
         case 0:
-            start_master(fd);
+            child_main(fd);
             break;
         default:
             close(fd);
