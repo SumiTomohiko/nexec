@@ -18,20 +18,7 @@
 #include <fsyscall/start_slave.h>
 
 #include <nexec/config.h>
-
-static void
-die(const char* fmt, ...)
-{
-    char buf[256];
-    snprintf(buf, sizeof(buf), "%s\n", fmt);
-
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, buf, ap);
-    va_end(ap);
-
-    exit(1);
-}
+#include <nexec/util.h>
 
 static void
 usage()
@@ -60,20 +47,6 @@ make_connected_socket(struct addrinfo* ai)
         return -1;
     }
     return sock;
-}
-
-static void
-write_all(int wfd, const void* buf, size_t bufsize)
-{
-    size_t nbytes = 0;
-    while (nbytes < bufsize) {
-        const void* p = (void*)((uintptr_t)buf + nbytes);
-        ssize_t n = write(wfd, p, bufsize - nbytes);
-        if (n == -1) {
-            err(1, "cannot write data");
-        }
-        nbytes += n;
-    }
 }
 
 static void

@@ -8,6 +8,9 @@ doc/install.png
 include/nexec/config.h
 java/bin
 jp.gr.java_conf.neko_daisuki.nexec.client
+lib/Makefile
+lib/cmake_install.cmake
+lib/libutil.a
 nexec/CMakeFiles
 nexec/Makefile
 nexec/cmake_install.cmake

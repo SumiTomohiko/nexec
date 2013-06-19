@@ -13,26 +13,7 @@
 #include <fsyscall/start_master.h>
 
 #include <nexec/nexecd.h>
-
-/**
- * TODO: Share this function with nexec.
- */
-static void
-die(const char* fmt, ...)
-{
-    char buf[256];
-    snprintf(buf, sizeof(buf), "%s\n", fmt);
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, buf, ap);
-    va_end(ap);
-
-    va_start(ap, fmt);
-    vsyslog(LOG_ERR, fmt, ap);
-    va_end(ap);
-
-    exit(1);
-}
+#include <nexec/util.h>
 
 struct tokenizer {
     char* p;
@@ -77,73 +58,6 @@ die_if_invalid_line(char *s)
     char *p;
     for (p = s; p < pend; p++) {
         die_if_invalid_byte(*p);
-    }
-}
-
-static void
-die_if_timeout(time_t t0)
-{
-    if (time(NULL) - t0 < 60) {
-        return;
-    }
-    die("timeout");
-}
-
-static char
-read_char(int fd)
-{
-    time_t t0 = time(NULL);
-
-    ssize_t n;
-    char c;
-    while (((n = read(fd, &c, sizeof(c))) == -1) && (errno == EAGAIN)) {
-        die_if_timeout(t0);
-
-        struct timespec rqtp;
-        rqtp.tv_sec = 0;
-        rqtp.tv_nsec = 1000000;
-        nanosleep(&rqtp, NULL);
-    }
-    if (n == -1) {
-        die("cannot read a next char: %s", strerror(errno));
-    }
-
-    return c;
-}
-
-static void
-read_line(int fd, char* buf, size_t bufsize)
-{
-    char* pend = buf + bufsize;
-    char* p = buf;
-    char c;
-    while ((p < pend) && (c = read_char(fd)) != '\r') {
-        *p = c;
-        p++;
-    }
-    if (p == pend) {
-        p[-1] = '\0';
-        die("too long request: %s", buf);
-    }
-
-    if (read_char(fd) != '\n') {
-        die("invalid line terminator.");
-    }
-
-    *p = '\0';
-}
-
-static void
-write_all(int fd, char* buf, size_t bufsize)
-{
-    char* pend = buf + bufsize;
-    size_t rest = bufsize;
-    while (0 < rest) {
-        ssize_t n = write(fd, pend - rest, rest);
-        if ((n == -1) && (errno != EAGAIN)) {
-            die("cannot write: %s", strerror(errno));
-        }
-        rest -= (n == -1 ? 0 : n);
     }
 }
 
@@ -226,9 +140,7 @@ handle_request(int fd)
 void
 child_main(int fd)
 {
-    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
-        die("fcntl() failed for F_SETFL and O_NONBCLOCK: %s", strerror(errno));
-    }
+    setnonblock(fd);
 
     while (1) {
         handle_request(fd);
