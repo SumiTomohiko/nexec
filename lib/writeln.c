@@ -9,7 +9,7 @@
 
 #include <nexec/util.h>
 
-void
+static void
 write_all(int fd, const void* buf, size_t bufsize)
 {
     size_t nbytes = 0;
@@ -21,6 +21,18 @@ write_all(int fd, const void* buf, size_t bufsize)
         }
         nbytes += n;
     }
+}
+
+void
+writeln(int fd, const char* msg)
+{
+    syslog(LOG_DEBUG, "write: %s", msg);
+
+    const char* newline = "\r\n";
+    size_t bufsize = strlen(msg) + strlen(newline);
+    char buf[bufsize + 1];
+    sprintf(buf, "%s%s", msg, newline);
+    write_all(fd, buf, bufsize);
 }
 
 /**

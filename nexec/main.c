@@ -50,21 +50,39 @@ make_connected_socket(struct addrinfo* ai)
 }
 
 static void
-write32(int wfd, uint32_t n)
+write_exec(int fd, int argc, char* argv[])
 {
-    uint32_t datum = htonl(n);
-    write_all(wfd, &datum, sizeof(datum));
+    const char* cmd = "EXEC";
+    size_t cmd_size = strlen(cmd);
+
+    size_t args_size = 0;
+    int i;
+    for (i = 0; i < argc; i++) {
+        args_size += 1 + strlen(argv[i]);
+    }
+
+    char buf[cmd_size + args_size + 1];
+    memcpy(buf, cmd, cmd_size);
+    char* p = buf + cmd_size;
+    for (i = 0; i < argc; i++) {
+        sprintf(p, " %s", argv[i]);
+        p += strlen(p);
+    }
+    *p = '\0';
+
+    writeln(fd, buf);
 }
 
 static void
-write_string(int wfd, const char* s)
+die_if_ng(int fd)
 {
-    size_t len = strlen(s);
-    if (UINT32_MAX < len) {
-        die("the string is too long (%lu).", len);
+    char buf[4096];
+    read_line(fd, buf, sizeof(buf));
+    syslog(LOG_DEBUG, "read: %s", buf);
+    if (strcmp(buf, "OK") == 0) {
+        return;
     }
-    write32(wfd, len);
-    write_all(wfd, s, len);
+    die("request failed: %s", buf);
 }
 
 static void
@@ -73,12 +91,6 @@ start_slave(int rfd, int argc, char* argv[])
     int wfd = dup(rfd);
     if (wfd == -1) {
         err(1, "dup() failed");
-    }
-
-    write32(wfd, argc);
-    int i;
-    for (i = 0; i < argc; i++) {
-        write_string(wfd, argv[i]);
     }
 
     fsyscall_start_slave(rfd, wfd, argc, argv);
@@ -101,6 +113,13 @@ log_starting(int argc, char* argv[])
     }
 
     syslog(LOG_INFO, "started: %s", buf);
+}
+
+static void
+do_exec(int fd, int argc, char* argv[])
+{
+    write_exec(fd, argc, argv);
+    die_if_ng(fd);
 }
 
 static void
@@ -143,7 +162,14 @@ nexec_main(int argc, char* argv[])
 
     syslog(LOG_INFO, "connected: host=%s, service=%s", hostname, servname);
 
-    start_slave(sock, argc - 1, argv + 1);
+    int nargs = argc - 1;
+    char** args = argv + 1;
+
+    setnonblock(sock);
+    do_exec(sock, nargs, args);
+    setblock(sock);
+
+    start_slave(sock, nargs, args);
 }
 
 int

@@ -1,2 +1,2 @@
 
-add_library(util STATIC die.c setnonblock.c read_line.c write_all.c)
+add_library(util STATIC die.c setblock.c setnonblock.c read_line.c writeln.c)

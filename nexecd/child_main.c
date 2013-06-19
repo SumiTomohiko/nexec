@@ -64,8 +64,7 @@ die_if_invalid_line(char *s)
 static void
 write_ok(int fd)
 {
-    char* buf = "OK\r\n";
-    write_all(fd, buf, strlen(buf));
+    writeln(fd, "OK");
 }
 
 static void
@@ -74,10 +73,7 @@ write_ng(int fd, const char* msg)
     char buf[1024];
     snprintf(buf, sizeof(buf), "NG %s", msg);
     syslog(LOG_ERR, "%s", buf);
-
-    char buf2[1024];
-    snprintf(buf2, sizeof(buf2), "%s\r\n", buf);
-    write_all(fd, buf2, strlen(buf2));
+    writeln(fd, buf);
 }
 
 static void
@@ -116,6 +112,8 @@ do_exec(int fd, struct tokenizer* tokenizer)
     }
 
     write_ok(fd);
+
+    setblock(fd);
     start_master(fd, nargs, args);
 }
 
