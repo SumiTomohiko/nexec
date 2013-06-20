@@ -164,11 +164,7 @@ nexec_main(int argc, char* argv[])
 
     int nargs = argc - 1;
     char** args = argv + 1;
-
-    setnonblock(sock);
     do_exec(sock, nargs, args);
-    setblock(sock);
-
     start_slave(sock, nargs, args);
 }
 

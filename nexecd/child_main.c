@@ -89,6 +89,15 @@ start_master(int rfd, int argc, char* argv[])
 }
 
 static void
+setblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == -1) {
+        die("fcntl() failed to be blocking: %s", strerror(errno));
+    }
+}
+
+static void
 do_exec(int fd, struct tokenizer* tokenizer)
 {
 #define MAX_NARGS 64
@@ -133,6 +142,15 @@ handle_request(int fd)
         return;
     }
     write_ng(fd, "unknown command");
+}
+
+static void
+setnonblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        die("fcntl() failed to be non-blocking: %s", strerror(errno));
+    }
 }
 
 void

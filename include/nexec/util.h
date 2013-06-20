@@ -2,8 +2,6 @@
 #define NEXEC_UTIL_H_INCLUDED
 
 void die(const char*, ...);
-void setblock(int);
-void setnonblock(int);
 void read_line(int, char*, size_t);
 void writeln(int, const char*);
 
