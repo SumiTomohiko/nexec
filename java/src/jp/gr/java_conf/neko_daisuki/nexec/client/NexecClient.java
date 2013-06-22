@@ -14,13 +14,6 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 
 public class NexecClient {
 
-    private static class ProtocolException extends Exception {
-
-        public ProtocolException(String message) {
-            super(message);
-        }
-    }
-
     private static final String ENCODING = "UTF-8";
 
     public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr) throws ProtocolException, InterruptedException, IOException {
