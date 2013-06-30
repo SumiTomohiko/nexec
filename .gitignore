@@ -19,4 +19,8 @@ nexec/nexec
 nexecd/CMakeFiles
 nexecd/Makefile
 nexecd/cmake_install.cmake
+nexecd/lexer.c
 nexecd/nexecd
+nexecd/parser.c
+nexecd/parser.h
+nexecd/parser.output
