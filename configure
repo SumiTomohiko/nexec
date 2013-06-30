@@ -1,16 +1,17 @@
 #!/bin/sh
 
 dir=$(dirname $0)
-opts=""
-cat "${dir}/configure.conf" \
-    | sed -e "s/ *#.*\$//" \
+opts=$(sed -e "s/ *#.*\$//" < "${dir}/configure.conf" \
     | grep -v "^ *\$" \
     | sed -e "s/ *: */ /" | awk '{
-    printf("-D%s=%s\n", toupper($1), $2)
-}' | while read opt
-do
-    opts="${opts} ${opt}"
-done
+    if ($1 == "prefix") {
+        name = "CMAKE_INSTALL_PREFIX"
+    }
+    else {
+        name = toupper($1)
+    }
+    printf(" -D%s=%s", name, $2)
+}')
 
 exec cmake ${opts} "${dir}"
 

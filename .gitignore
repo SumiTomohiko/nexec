@@ -7,6 +7,7 @@ configure.conf
 doc/index.html
 doc/install.png
 include/nexec/config.h
+install_manifest.txt
 java/bin
 jp.gr.java_conf.neko_daisuki.nexec.client
 lib/Makefile
