@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/param.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -82,6 +83,24 @@ listen_or_die(int sock)
 }
 
 static void
+read_config_or_die(struct Config* config)
+{
+    const char* path = NEXEC_INSTALL_PREFIX "/etc/nexecd.conf";
+    FILE* fpin = fopen(path, "r");
+    if (fpin == NULL) {
+        die("cannot open %s: %s", path, strerror(errno));
+    }
+
+    parser_initialize(config);
+    extern FILE* yyin;
+    yyin = fpin;
+    extern int yyparse();
+    yyparse();
+
+    fclose(fpin);
+}
+
+static void
 nexecd_main()
 {
     struct addrinfo hints;
@@ -113,6 +132,9 @@ nexecd_main()
         die("signal() failed: %s", strerror(errno));
     }
 
+    struct Config config;
+    read_config_or_die(&config);
+
     if (daemon(0, 0) != 0) {
         die("daemon() failed: %s", strerror(errno));
     }
@@ -143,7 +165,7 @@ nexecd_main()
         int status;
         switch (pid) {
         case 0:
-            child_main(fd);
+            child_main(&config, fd);
             break;
         default:
             close(fd);
@@ -178,7 +200,10 @@ main(int argc, char* argv[])
     }
 
     openlog(getprogname(), LOG_PID, LOG_USER);
+    syslog(LOG_INFO, "initializing.");
+    memory_initialize();
     nexecd_main();
+    memory_dispose();
     closelog();
 
     return 0;

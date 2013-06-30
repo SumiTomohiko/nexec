@@ -14,7 +14,7 @@ struct Config {
 };
 
 /* child_main.c */
-void child_main(int);
+void child_main(struct Config*, int);
 
 /* memory.c */
 void* memory_allocate(size_t);

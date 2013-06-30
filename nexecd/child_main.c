@@ -97,8 +97,18 @@ setblock(int fd)
     }
 }
 
+static char*
+find_mapping(struct Config* config, const char* name)
+{
+    struct Mapping* mappings = config->mappings;
+    while ((mappings != NULL) && (strcmp(name, mappings->name) != 0)) {
+        mappings = mappings->next;
+    }
+    return mappings != NULL ? mappings->path : NULL;
+}
+
 static void
-do_exec(int fd, struct tokenizer* tokenizer)
+do_exec(struct Config* config, int fd, struct tokenizer* tokenizer)
 {
 #define MAX_NARGS 64
     char* args[MAX_NARGS];
@@ -120,6 +130,13 @@ do_exec(int fd, struct tokenizer* tokenizer)
         return;
     }
 
+    char* exe = find_mapping(config, args[0]);
+    if (exe == NULL) {
+        write_ng(fd, "command not found");
+        return;
+    }
+    args[0] = exe;  /* This is not beautiful. */
+
     write_ok(fd);
 
     setblock(fd);
@@ -127,7 +144,7 @@ do_exec(int fd, struct tokenizer* tokenizer)
 }
 
 static void
-handle_request(int fd)
+handle_request(struct Config* config, int fd)
 {
     char line[4096];
     read_line(fd, line, sizeof(line));
@@ -138,7 +155,7 @@ handle_request(int fd)
     tokenizer.p = line;
     char* token = get_next_token(&tokenizer);
     if (strcmp(token, "EXEC") == 0) {
-        do_exec(fd, &tokenizer);
+        do_exec(config, fd, &tokenizer);
         return;
     }
     write_ng(fd, "unknown command");
@@ -154,12 +171,12 @@ setnonblock(int fd)
 }
 
 void
-child_main(int fd)
+child_main(struct Config* config, int fd)
 {
     setnonblock(fd);
 
     while (1) {
-        handle_request(fd);
+        handle_request(config, fd);
     }
 
     /* NOTREACHED */
