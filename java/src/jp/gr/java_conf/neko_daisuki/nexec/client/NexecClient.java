@@ -11,19 +11,20 @@ import java.util.Arrays;
 import java.util.List;
 
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
+import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
 
 public class NexecClient {
 
     private static final String ENCODING = "UTF-8";
 
-    public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr) throws ProtocolException, InterruptedException, IOException {
+    public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Permissions permissions) throws ProtocolException, InterruptedException, IOException {
         Socket sock = new Socket(server, port);
         try {
             InputStream in = sock.getInputStream();
             OutputStream out = sock.getOutputStream();
             doExec(in, out, args);
 
-            new Application().run(in, out, stdin, stdout, stderr);
+            new Application().run(in, out, stdin, stdout, stderr, permissions);
         }
         finally {
             sock.close();
@@ -36,8 +37,12 @@ public class NexecClient {
         String[] params = Arrays.copyOfRange(args, 2, args.length);
 
         NexecClient client = new NexecClient();
+        InputStream stdin = System.in;
+        OutputStream stdout = System.out;
+        OutputStream stderr = System.err;
+        Permissions perm = new Permissions(true);
         try {
-            client.run(server, port, params, System.in, System.out, System.err);
+            client.run(server, port, params, stdin, stdout, stderr, perm);
         }
         catch (Exception e) {
             e.printStackTrace();
