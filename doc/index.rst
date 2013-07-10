@@ -22,6 +22,16 @@ machine from your Android tablet.
 .. _Android client:
     http://neko-daisuki.ddo.jp/~SumiTomohiko/android-nexec-client/index.html
 
+What are the rolls of nexec?
+============================
+
+The core software to transfer system call requests is fsyscall. But fsyscall
+does not have any functions to make connections. And, the function to tell a
+command to execute in a master machine is not included in fsyscall.
+
+The roles of nexec are these lost functions -- connecting with a server, and
+sending a command to a master machine.
+
 Requirements
 ============
 
@@ -80,6 +90,26 @@ Compile nexec
 The command to compile and install is::
 
     $ ./configure && make && make install
+
+How to compile the client of Java version
+=========================================
+
+Requirements
+------------
+
+To compile Java version, you must use
+
+* OpenJDK 1.6
+* Ant
+
+Compile
+-------
+
+You can compile Java version with the command::
+
+    $ make java
+
+Then, you will have java/bin/nexec-client.jar.
 
 Start nexecd
 ============
