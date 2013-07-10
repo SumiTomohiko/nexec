@@ -16,6 +16,12 @@ read/write files in your machine.
 nexec consists of two executables -- nexec and nexecd. nexec is the client
 program, and nexecd is the server one.
 
+Moreover, `Android client`_ is ready. You can use applications on a FreeBSD
+machine from your Android tablet.
+
+.. _Android client:
+    http://neko-daisuki.ddo.jp/~SumiTomohiko/android-nexec-client/index.html
+
 Requirements
 ============
 
