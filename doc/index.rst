@@ -33,8 +33,15 @@ Download
 Tarballs (nexec-*x.y.z*.tar.xz) are available at `the author's repository
 <http://neko-daisuki.ddo.jp/~SumiTomohiko/repos/index.html>`_.
 
-How to install and prepare
-==========================
+How to compile/install
+======================
+
+Requirements
+------------
+
+Compiling nexec needs
+
+* `CMake <http://www.cmake.org>`_ 2.8.9
 
 Install fsyscall
 ----------------
@@ -47,20 +54,57 @@ a client.
 
 .. image:: install.png
 
+Edit configure.conf
+-------------------
+
+The Second step of installing is editing configure.conf. You can give the
+building/compiling options by this file. There is a sample file of this file
+named configure.conf.sample at the top directory of the source tree. Copying
+this sample is the most easy beginning::
+
+    $ cp configure.conf.sample configure.conf
+    $ your_favorite_editor configure.conf
+
+You must give two settings, prefix and fsyscall_dir in the following form::
+
+    prefix: ~/.local
+    fsyscall_dir: ~/projects/fsyscall2
+
+prefix is the top directory to install. The executables and the configuretaion
+file will be installed into prefix/bin or prefix/etc. fsyscall_dir is the
+directory which contains the source tree of fsyscall.
+
 Compile nexec
 -------------
 
-Compiling nexec needs `CMake <http://www.cmake.org>`_ 2.8.9. Instructions are::
+The command to compile and install is::
 
-    $ cmake . && make
+    $ ./configure && make && make install
 
-You will get executables of nexec/nexec and nexecd/nexecd.
+Start nexecd
+============
+
+Edit /etc/nexecd.conf
+---------------------
+
+/etc/nexecd.conf is the file to define behavior of nexecd. The contents of this
+file is like::
+
+    mapping
+        "echo": "/bin/echo"
+        "ffmpeg": "/usr/local/bin/ffmpeg"
+    end
+
+The mapping section defines commands. The left side of a colon (":") is a
+command name, and the right side is a path to an executable. nexec client must
+specify one command in the mapping section, and nexecd DOES NOT EXECUTE ANY
+COMMANDS WHICH DO NOT APPEAR IN THIS SECTION.
 
 Load the kernel module of fsyscall
 ----------------------------------
 
-Third step is loading the kernel module of fsyscall in the remoe machine. Please
-execute the following command at the top directory of fsyscall::
+The second step is loading the kernel module of fsyscall in the remote machine.
+Please execute the following command at the top directory of fsyscall::
 
     $ sudo kldload fmaster/fmaster.ko
 
@@ -71,20 +115,30 @@ Now is the time to start nexecd in the remote machine::
 
     $ nexecd
 
+Stop nexecd
+-----------
+
+SIGTERM stops nexecd::
+
+    $ killall nexecd    # SIGTERM is the default signal of killall.
+
 How to use
 ==========
 
 Please give nexec with address of the remote machine and commands::
 
-    $ nexec 192.168.42.26 /bin/echo foo bar baz quux
+    $ nexec 192.168.42.26 echo foo bar baz quux
 
-The above command executes /bin/echo in the remote machine of 192.168.42.26 with
+The above command executes echo in the remote machine of 192.168.42.26 with
 passing four command line arguments of "foo", "bar", "baz" and "quux". You will
 see the following stdout::
 
     foo bar baz quux
 
-.. attention:: The current version supports only /bin/echo.
+You can see the supported applications in `the fsyscall page`_.
+
+.. _the fsyscall page:
+    http://neko-daisuki.ddo.jp/~SumiTomohiko/fsyscall/index.html#supported-applications
 
 Anything else
 =============
