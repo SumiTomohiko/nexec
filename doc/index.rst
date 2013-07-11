@@ -99,7 +99,7 @@ Requirements
 
 To compile Java version, you must use
 
-* `OpenJDK`_ 1.6
+* `Open JDK`_ 1.6.0
 * `Apache Ant`_ 1.8.4
 
 .. _Open JDK: http://openjdk.java.net/
