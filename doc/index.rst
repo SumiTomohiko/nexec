@@ -40,8 +40,10 @@ nexec (and fsyscall) works on FreeBSD/amd64.
 Download
 ========
 
-Tarballs (nexec-*x.y.z*.tar.xz) are available at `the author's repository
-<http://neko-daisuki.ddo.jp/~SumiTomohiko/repos/index.html>`_.
+Tarballs (nexec-*x.y.z*.tar.xz) are available at `the author's repository`_.
+
+.. _the author's repository:
+    http://neko-daisuki.ddo.jp/~SumiTomohiko/repos/index.html
 
 How to compile/install
 ======================
@@ -57,12 +59,14 @@ Install fsyscall
 ----------------
 
 nexec requires fsyscall in both of a local machine and a remote machine. Please
-install fsyscall with following `the fsyscall documentation
-<http://neko-daisuki.ddo.jp/~SumiTomohiko/fsyscall/index.html>`_. fmaster.ko and
-fmhub must be installed into a server, fslave and fshub must be installed into
-a client.
+install fsyscall with following `the fsyscall documentation`_. fmaster.ko and
+fmhub must be installed into a server, fslave and fshub must be installed into a
+client.
 
 .. image:: install.png
+
+.. _the fsyscall documentation:
+    http://neko-daisuki.ddo.jp/~SumiTomohiko/fsyscall/index.html
 
 Edit configure.conf
 -------------------
