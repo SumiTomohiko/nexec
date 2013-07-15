@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# PROVIDE: nexecd
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+
+#
+# Add the following lines to /etc/rc.conf to enable nexecd:
+#
+#nexecd_enable="YES"
+
+. /etc/rc.subr
+
+name="nexecd"
+rcvar="nexecd_enable"
+
+load_rc_config $name
+
+command="/usr/local/bin/nexecd"
+
+run_rc_command "$1"
