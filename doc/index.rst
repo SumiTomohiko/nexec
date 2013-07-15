@@ -145,19 +145,27 @@ Please execute the following command at the top directory of fsyscall::
 
     $ sudo kldload fmaster/fmaster.ko
 
+Enable nexecd in /etc/rc.conf
+-----------------------------
+
+If you are using FreeBSD, you must enable nexecd in /etc/rc.conf with the
+following statement::
+
+    nexecd_enable="YES"
+
 Start nexecd
 ------------
 
 Now is the time to start nexecd in the remote machine::
 
-    $ nexecd
+    $ sudo service nexecd start
 
 Stop nexecd
 -----------
 
-SIGTERM stops nexecd::
+The way to stop nexecd is also simple::
 
-    $ killall nexecd    # SIGTERM is the default signal of killall.
+    $ sudo service nexecd stop
 
 How to use
 ==========
