@@ -25,3 +25,5 @@ nexecd/nexecd
 nexecd/parser.c
 nexecd/parser.h
 nexecd/parser.output
+rc.d/Makefile
+rc.d/cmake_install.cmake

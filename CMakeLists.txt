@@ -14,7 +14,7 @@ set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 include_directories(${INCLUDE_DIR} ${FSYSCALL_DIR}/include)
 configure_file(${INCLUDE_DIR}/nexec/config.h.in ${INCLUDE_DIR}/nexec/config.h)
 
-subdirs(lib nexec nexecd)
+subdirs(lib nexec nexecd rc.d)
 
 add_custom_target(doc COMMAND cd doc && make)
 add_custom_target(java COMMAND cd java && ant)
