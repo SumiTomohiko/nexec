@@ -13,6 +13,7 @@
 
 name="nexecd"
 rcvar="nexecd_enable"
+required_modules="fmaster"
 
 load_rc_config $name
 
