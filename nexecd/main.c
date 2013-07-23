@@ -83,7 +83,7 @@ listen_or_die(int sock)
 }
 
 static void
-read_config_or_die(struct Config* config)
+read_config_or_die(struct config* config)
 {
     const char* path = NEXEC_INSTALL_PREFIX "/etc/nexecd.conf";
     FILE* fpin = fopen(path, "r");
@@ -111,7 +111,7 @@ fork_or_die()
 }
 
 static void
-start_child(struct Config* config, int fd)
+start_child(struct config* config, int fd)
 {
     pid_t pid = fork_or_die();
     if (pid != 0) {
@@ -162,7 +162,7 @@ nexecd_main()
         die("signal() failed: %s", strerror(errno));
     }
 
-    struct Config config;
+    struct config config;
     read_config_or_die(&config);
 
     if (daemon(0, 0) != 0) {

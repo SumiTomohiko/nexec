@@ -3,18 +3,18 @@
 
 #include <sys/param.h>
 
-struct Mapping {
-    struct Mapping* next;
+struct mapping {
+    struct mapping* next;
     char name[32];
     char path[MAXPATHLEN];
 };
 
-struct Config {
-    struct Mapping* mappings;
+struct config {
+    struct mapping* mappings;
 };
 
 /* child_main.c */
-void child_main(struct Config*, int);
+void child_main(struct config*, int);
 
 /* memory.c */
 void* memory_allocate(size_t);
@@ -22,7 +22,7 @@ void memory_dispose();
 void memory_initialize();
 
 /* parser.y */
-void parser_initialize(struct Config*);
+void parser_initialize(struct config*);
 
 #endif
 /**

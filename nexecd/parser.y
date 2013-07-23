@@ -6,10 +6,10 @@
 
 #include <nexec/nexecd.h>
 
-static struct Config* parser_config;
+static struct config* parser_config;
 
 void
-parser_initialize(struct Config* config)
+parser_initialize(struct config* config)
 {
     parser_config = config;
 }
@@ -29,7 +29,7 @@ yyerror(const char* msg)
 }
 %}
 %union {
-    struct Mapping* mapping;
+    struct mapping* mapping;
     char* string;
 }
 %token T_END T_MAPPING T_NEWLINE

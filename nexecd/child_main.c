@@ -98,9 +98,9 @@ setblock(int fd)
 }
 
 static char*
-find_mapping(struct Config* config, const char* name)
+find_mapping(struct config* config, const char* name)
 {
-    struct Mapping* mappings = config->mappings;
+    struct mapping* mappings = config->mappings;
     while ((mappings != NULL) && (strcmp(name, mappings->name) != 0)) {
         mappings = mappings->next;
     }
@@ -108,7 +108,7 @@ find_mapping(struct Config* config, const char* name)
 }
 
 static void
-do_exec(struct Config* config, int fd, struct tokenizer* tokenizer)
+do_exec(struct config* config, int fd, struct tokenizer* tokenizer)
 {
 #define MAX_NARGS 64
     char* args[MAX_NARGS];
@@ -144,7 +144,7 @@ do_exec(struct Config* config, int fd, struct tokenizer* tokenizer)
 }
 
 static void
-handle_request(struct Config* config, int fd)
+handle_request(struct config* config, int fd)
 {
     char line[4096];
     read_line(fd, line, sizeof(line));
@@ -171,7 +171,7 @@ setnonblock(int fd)
 }
 
 void
-child_main(struct Config* config, int fd)
+child_main(struct config* config, int fd)
 {
     setnonblock(fd);
 

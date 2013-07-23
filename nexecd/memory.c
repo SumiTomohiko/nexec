@@ -5,26 +5,22 @@
 
 #define ARENA_SIZE  8192
 
-struct Arena {
-    struct Arena* next;
+struct arena {
+    struct arena* next;
     size_t used_size;
     void* ptr;
 };
 
-typedef struct Arena Arena;
-
-struct Storage {
-    struct Arena* arena;
+struct storage {
+    struct arena* arena;
 };
 
-typedef struct Storage Storage;
+static struct storage storage;
 
-static Storage storage;
-
-static Arena*
+static struct arena*
 allocate_arena()
 {
-    Arena* arena = (Arena*)malloc(sizeof(Arena));
+    struct arena* arena = (struct arena*)malloc(sizeof(struct arena));
     assert(arena != NULL);
     void* ptr = malloc(ARENA_SIZE);
     assert(ptr != NULL);
@@ -44,9 +40,9 @@ memory_initialize()
 void
 memory_dispose()
 {
-    Arena* arena = storage.arena;
+    struct arena* arena = storage.arena;
     while (arena != NULL) {
-        Arena* next = arena->next;
+        struct arena* next = arena->next;
         free(arena->ptr);
         free(arena);
         arena = next;
@@ -63,7 +59,7 @@ memory_allocate(size_t size)
     size_t used_size = storage.arena->used_size;
     size_t unused_size = ARENA_SIZE - used_size;
     if (unused_size < aligned_size) {
-        Arena* arena = allocate_arena();
+        struct arena* arena = allocate_arena();
         arena->next = storage.arena;
         storage.arena = arena;
         return memory_allocate(size);
