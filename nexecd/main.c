@@ -100,6 +100,36 @@ read_config_or_die(struct Config* config)
     fclose(fpin);
 }
 
+static pid_t
+fork_or_die()
+{
+    pid_t pid = fork();
+    if (pid == -1) {
+        die("fork failed: %s", strerror(errno));
+    }
+    return pid;
+}
+
+static void
+start_child(struct Config* config, int fd)
+{
+    pid_t pid = fork_or_die();
+    if (pid != 0) {
+        close(fd);
+        waitpid(pid, NULL, 0);
+        return;
+    }
+
+    pid_t pid2 = fork_or_die();
+    if (pid2 != 0) {
+        exit(0);
+    }
+
+    child_main(config, fd);
+    /* UNREACHABLE */
+    syslog(LOG_EMERG, "UNREACHABLE REACHED");
+}
+
 static void
 nexecd_main()
 {
@@ -158,21 +188,7 @@ nexecd_main()
         }
         syslog(LOG_INFO, "accepted: host=%s, port=%s", host, serv);
 
-        pid_t pid = fork();
-        if (pid == -1) {
-            die("fork() failed: %s", strerror(errno));
-        }
-        int status;
-        switch (pid) {
-        case 0:
-            child_main(&config, fd);
-            break;
-        default:
-            close(fd);
-            /* TODO: Do not wait child's termination. */
-            waitpid(pid, &status, 0);
-            break;
-        }
+        start_child(&config, fd);
     }
 
     for (i = 0; i < nsock; i++) {
