@@ -95,6 +95,14 @@ The command to compile and install is::
 
     $ ./configure && make && make install
 
+Add user and group for nexecd
+-----------------------------
+
+A user and a group which nexecd works on must be added::
+
+    $ sudo pw groupadd nexecd
+    $ sudo pw useradd nexecd -g nexecd -s /usr/sbin/nologin -c nexecd -d /nonexistent
+
 How to compile the client of Java version
 =========================================
 
@@ -127,10 +135,18 @@ Edit /etc/nexecd.conf
 /etc/nexecd.conf is the file to define behavior of nexecd. The contents of this
 file is like::
 
+    daemon
+        user: "nexecd"
+        group: "nexecd"
+    end
+
     mapping
         "echo": "/bin/echo"
         "ffmpeg": "/usr/local/bin/ffmpeg"
     end
+
+The daemon section gives attributes of a daemon process. A daemon process
+changes its uid/gid as given in this section.
 
 The mapping section defines commands. The left side of a colon (":") is a
 command name, and the right side is a path to an executable. nexec client must
