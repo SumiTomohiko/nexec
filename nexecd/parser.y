@@ -32,7 +32,11 @@ yyerror(const char* msg)
     struct mapping* mapping;
     char* string;
 }
-%token T_END T_MAPPING T_NEWLINE
+/*
+ * <machine/trap.h> on FreeBSD 9.1 defines T_USER. To avoid the compile error,
+ * one underscore "_" is appended to T_USER.
+ */
+%token T_DAEMON T_END T_GROUP T_MAPPING T_NEWLINE T_USER_
 %token<string> T_STRING
 %type<mapping> mapping mappings
 %%
@@ -41,6 +45,15 @@ config  : config T_NEWLINE section
         ;
 section : T_MAPPING T_NEWLINE mappings T_NEWLINE T_END {
             parser_config->mappings = $3;
+        }
+        | T_DAEMON T_NEWLINE
+                T_USER_ T_COLON T_STRING T_NEWLINE
+                T_GROUP T_COLON T_STRING T_NEWLINE
+                T_END {
+            assert(strlen($5) < sizeof(parser_config->daemon.user));
+            assert(strlen($9) < sizeof(parser_config->daemon.group));
+            sprintf(parser_config->daemon.user, "%s", $5);
+            sprintf(parser_config->daemon.group, "%s", $9);
         }
         | /* empty */
         ;

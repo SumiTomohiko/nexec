@@ -18,6 +18,9 @@ static char string[256];
 %start COMMENT STRING
 %%
 <INITIAL>":"        return T_COLON;
+<INITIAL>"daemon"   return T_DAEMON;
+<INITIAL>"user"     return T_USER_;     /* Read parser.y about the last "_" */
+<INITIAL>"group"    return T_GROUP;
 <INITIAL>"end"      return T_END;
 <INITIAL>"mapping"  return T_MAPPING;
 <INITIAL>"\n"       return T_NEWLINE;

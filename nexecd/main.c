@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <getopt.h>
+#include <grp.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -131,6 +133,38 @@ start_child(struct config* config, int fd)
 }
 
 static void
+daemon_or_die()
+{
+    if (daemon(0, 0) != 0) {
+        die("daemon() failed: %s", strerror(errno));
+    }
+}
+
+static void
+set_user_group_or_die(struct config* config)
+{
+    errno = 0;
+    const char* groupname = config->daemon.group;
+    struct group* group = getgrnam(groupname);
+    if (group == NULL) {
+        die("cannot find group: %s: %s", groupname, strerror(errno));
+    }
+    gid_t gid = group->gr_gid;
+    if (setgid(gid) != 0) {
+        die("cannot set group: %s (%d): %s", groupname, gid, strerror(errno));
+    }
+    const char* username = config->daemon.user;
+    struct passwd* user = getpwnam(username);
+    if (user == NULL) {
+        die("cannot find user: %s: %s", user, strerror(errno));
+    }
+    uid_t uid = user->pw_uid;
+    if (setuid(uid) != 0) {
+        die("cannot set user: %s (%d): %s", user, uid, strerror(errno));
+    }
+}
+
+static void
 nexecd_main()
 {
     struct addrinfo hints;
@@ -163,12 +197,11 @@ nexecd_main()
     }
 
     struct config config;
+    config.daemon.user[0] = config.daemon.group[0] = '\0';
     read_config_or_die(&config);
 
-    if (daemon(0, 0) != 0) {
-        die("daemon() failed: %s", strerror(errno));
-    }
-
+    set_user_group_or_die(&config);
+    daemon_or_die();
     syslog(LOG_INFO, "started.");
 
     int sock;

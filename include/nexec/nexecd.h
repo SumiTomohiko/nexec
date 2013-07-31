@@ -3,6 +3,11 @@
 
 #include <sys/param.h>
 
+struct daemon {
+    char user[16];
+    char group[16];
+};
+
 struct mapping {
     struct mapping* next;
     char name[32];
@@ -10,6 +15,7 @@ struct mapping {
 };
 
 struct config {
+    struct daemon daemon;
     struct mapping* mappings;
 };
 
