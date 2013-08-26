@@ -213,6 +213,7 @@ nexecd_main()
         if (fd == -1) {
             die("accept() failed: %s", strerror(errno));
         }
+        set_tcp_nodelay_or_die(fd);
 
         char host[NI_MAXHOST], serv[NI_MAXSERV];
         int ecode = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV);
