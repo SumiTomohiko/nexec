@@ -10,3 +10,5 @@ target_link_libraries(
     util set_tcp_nodelay_or_die ${LIB_START_SLAVE} ${LIB_CLOSE_OR_DIE}
     ${LIB_PIPE_OR_DIE} ${LIB_FORK_OR_DIE} ${LIB_DIE})
 install(PROGRAMS nexec DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+
+# vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
