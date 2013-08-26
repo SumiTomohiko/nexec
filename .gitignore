@@ -12,6 +12,7 @@ java/bin
 jp.gr.java_conf.neko_daisuki.nexec.client
 lib/Makefile
 lib/cmake_install.cmake
+lib/libset_tcp_nodelay_or_die.a
 lib/libutil.a
 nexec/CMakeFiles
 nexec/Makefile
