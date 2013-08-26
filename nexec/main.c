@@ -159,6 +159,7 @@ nexec_main(int argc, char* argv[])
     if (sock == -1) {
         die("connecting to nexecd failed.");
     }
+    set_tcp_nodelay_or_die(sock);
 
     syslog(LOG_INFO, "connected: host=%s, service=%s", hostname, servname);
 
