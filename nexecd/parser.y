@@ -59,8 +59,8 @@ section : T_MAPPING T_NEWLINE mappings T_NEWLINE T_END {
         ;
 mappings
         : mappings T_NEWLINE mapping {
-            $1->next = $3;
-            $$ = $1;
+            $3->next = $1;
+            $$ = $3;
         }
         | mapping {
             $$ = $1;
