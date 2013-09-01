@@ -20,6 +20,8 @@ public class NexecClient {
 
     public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Permissions permissions, Links links) throws ProtocolException, InterruptedException, IOException {
         Socket sock = new Socket(server, port);
+        sock.setTcpNoDelay(true);
+
         try {
             InputStream in = sock.getInputStream();
             OutputStream out = sock.getOutputStream();
