@@ -20,6 +20,12 @@
 #include <nexec/config.h>
 #include <nexec/util.h>
 
+struct env {
+    struct env* next;
+    const char* name;
+    const char* value;
+};
+
 static void
 usage()
 {
@@ -122,8 +128,30 @@ do_exec(int fd, int argc, char* argv[])
     die_if_ng(fd);
 }
 
+static void
+do_set_env(int fd, struct env* penv)
+{
+    const char* cmd = "SET_ENV";
+    const char* name = penv->name;
+    const char* value = penv->value;
+    char buf[strlen(cmd) + strlen(name) + strlen(value) + 3];
+    sprintf(buf, "%s %s %s", cmd, name, value);
+    writeln(fd, buf);
+
+    die_if_ng(fd);
+}
+
+static void
+send_env(int fd, struct env* penv)
+{
+    struct env* p;
+    for (p = penv; p != NULL; p = p->next) {
+        do_set_env(fd, p);
+    }
+}
+
 static int
-nexec_main(int argc, char* argv[])
+nexec_main(int argc, char* argv[], struct env* penv)
 {
     if (argc < 2) {
         usage();
@@ -163,6 +191,8 @@ nexec_main(int argc, char* argv[])
 
     syslog(LOG_INFO, "connected: host=%s, service=%s", hostname, servname);
 
+    send_env(sock, penv);
+
     int nargs = argc - 1;
     char** args = argv + 1;
     do_exec(sock, nargs, args);
@@ -171,15 +201,48 @@ nexec_main(int argc, char* argv[])
     return 1;
 }
 
+static struct env*
+create_env(const char* pair)
+{
+    char buf[strlen(pair) + 1];
+    strcpy(buf, pair);
+    char* p = strchr(buf, '=');
+    assert(p != NULL);
+    *p = '\0';
+    p++;
+
+    char* name = (char*)malloc(strlen(buf) + 1);
+    assert(name != NULL);
+    strcpy(name, buf);
+    char* value = (char*)malloc(strlen(p) + 1);
+    assert(value != NULL);
+    strcpy(value, p);
+
+    struct env* penv = (struct env*)malloc(sizeof(*penv));
+    penv->next = NULL;
+    penv->name = name;
+    penv->value = value;
+
+    return penv;
+}
+
 int
 main(int argc, char* argv[])
 {
+    struct env* penv = NULL;
+    struct env* p;
     struct option opts[] = {
+        { "env", required_argument, NULL, 'e' },
         { "version", no_argument, NULL, 'v' },
         { NULL, 0, NULL, 0 } };
     int opt;
     while ((opt = getopt_long(argc, argv, "+v", opts, NULL)) != -1) {
         switch (opt) {
+        case 'e':
+            p = create_env(optarg);
+            p->next = penv;
+            penv = p;
+            break;
         case 'v':
             printf("%s %s\n", getprogname(), NEXEC_VERSION);
             return 0;
@@ -189,7 +252,7 @@ main(int argc, char* argv[])
     }
 
     openlog(getprogname(), LOG_PID, LOG_USER);
-    int status = nexec_main(argc - optind, argv + optind);
+    int status = nexec_main(argc - optind, argv + optind, penv);
     closelog();
 
     return status;
