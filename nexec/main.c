@@ -20,12 +20,6 @@
 #include <nexec/config.h>
 #include <nexec/util.h>
 
-struct env {
-    struct env* next;
-    const char* name;
-    const char* value;
-};
-
 static void
 usage()
 {
@@ -218,7 +212,7 @@ create_env(const char* pair)
     assert(value != NULL);
     strcpy(value, p);
 
-    struct env* penv = (struct env*)malloc(sizeof(*penv));
+    struct env* penv = alloc_env_or_die();
     penv->next = NULL;
     penv->name = name;
     penv->value = value;

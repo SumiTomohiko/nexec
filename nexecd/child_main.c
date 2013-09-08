@@ -15,6 +15,11 @@
 #include <nexec/nexecd.h>
 #include <nexec/util.h>
 
+struct child {
+    struct config* config;
+    struct env* env;
+};
+
 struct tokenizer {
     char* p;
 };
@@ -108,7 +113,19 @@ find_mapping(struct config* config, const char* name)
 }
 
 static void
-do_exec(struct config* config, int fd, struct tokenizer* tokenizer)
+do_set_env(struct child* child, int fd, struct tokenizer* tokenizer)
+{
+    struct env* penv = alloc_env_or_die();
+    penv->next = child->env;
+    penv->name = get_next_token(tokenizer);
+    penv->value = get_next_token(tokenizer);
+    child->env = penv;
+
+    write_ok(fd);
+}
+
+static void
+do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
 {
 #define MAX_NARGS 64
     char* args[MAX_NARGS];
@@ -130,7 +147,7 @@ do_exec(struct config* config, int fd, struct tokenizer* tokenizer)
         return;
     }
 
-    char* exe = find_mapping(config, args[0]);
+    char* exe = find_mapping(child->config, args[0]);
     if (exe == NULL) {
         write_ng(fd, "command not found");
         return;
@@ -144,7 +161,7 @@ do_exec(struct config* config, int fd, struct tokenizer* tokenizer)
 }
 
 static void
-handle_request(struct config* config, int fd)
+handle_request(struct child* child, int fd)
 {
     char line[4096];
     read_line(fd, line, sizeof(line));
@@ -155,7 +172,11 @@ handle_request(struct config* config, int fd)
     tokenizer.p = line;
     char* token = get_next_token(&tokenizer);
     if (strcmp(token, "EXEC") == 0) {
-        do_exec(config, fd, &tokenizer);
+        do_exec(child, fd, &tokenizer);
+        return;
+    }
+    if (strcmp(token, "SET_ENV") == 0) {
+        do_set_env(child, fd, &tokenizer);
         return;
     }
     write_ng(fd, "unknown command");
@@ -175,8 +196,12 @@ child_main(struct config* config, int fd)
 {
     setnonblock(fd);
 
+    struct child child;
+    child.config = config;
+    child.env = NULL;
+
     while (1) {
-        handle_request(config, fd);
+        handle_request(&child, fd);
     }
 
     /* NOTREACHED */
