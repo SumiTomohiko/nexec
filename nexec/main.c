@@ -122,12 +122,12 @@ do_exec(int fd, int argc, char* argv[])
     die_if_ng(fd);
 }
 
-static void
+static int
 nexec_main(int argc, char* argv[])
 {
     if (argc < 2) {
         usage();
-        exit(1);
+        return 1;
     }
     log_starting(argc, argv);
 
@@ -167,6 +167,8 @@ nexec_main(int argc, char* argv[])
     char** args = argv + 1;
     do_exec(sock, nargs, args);
     start_slave(sock, nargs, args);
+    /* NOTREACHED */
+    return 1;
 }
 
 int
@@ -187,10 +189,10 @@ main(int argc, char* argv[])
     }
 
     openlog(getprogname(), LOG_PID, LOG_USER);
-    nexec_main(argc - optind, argv + optind);
+    int status = nexec_main(argc - optind, argv + optind);
     closelog();
 
-    return 0;
+    return status;
 }
 
 /**
