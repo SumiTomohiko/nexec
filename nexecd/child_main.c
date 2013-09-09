@@ -82,14 +82,14 @@ write_ng(int fd, const char* msg)
 }
 
 static void
-start_master(int rfd, int argc, char* argv[])
+start_master(int rfd, int argc, char* argv[], char* const envp[])
 {
     int wfd = dup(rfd);
     if (wfd == -1) {
         die("dup() failed: %s", strerror(errno));
     }
 
-    fsyscall_start_master(rfd, wfd, argc, argv);
+    fsyscall_start_master(rfd, wfd, argc, argv, envp);
     /* NOTREACHED */
 }
 
@@ -112,16 +112,37 @@ find_mapping(struct config* config, const char* name)
     return mappings != NULL ? mappings->path : NULL;
 }
 
+static char*
+copy_next_token(struct tokenizer* tokenizer)
+{
+    const char* s = get_next_token(tokenizer);
+    char* t = (char*)malloc(strlen(s) + 1);
+    assert(t != NULL);
+    strcpy(t, s);
+    return t;
+}
+
 static void
 do_set_env(struct child* child, int fd, struct tokenizer* tokenizer)
 {
     struct env* penv = alloc_env_or_die();
     penv->next = child->env;
-    penv->name = get_next_token(tokenizer);
-    penv->value = get_next_token(tokenizer);
+    penv->name = copy_next_token(tokenizer);
+    penv->value = copy_next_token(tokenizer);
     child->env = penv;
 
     write_ok(fd);
+}
+
+static int
+count_env(struct env* env)
+{
+    int n = 0;
+    struct env* penv;
+    for (penv = env; penv != NULL; penv = penv->next) {
+        n++;
+    }
+    return n;
 }
 
 static void
@@ -154,10 +175,24 @@ do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
     }
     args[0] = exe;  /* This is not beautiful. */
 
-    write_ok(fd);
+    int nenv = count_env(child->env);
+    char** envp = (char**)malloc(sizeof(char*) * (nenv + 1));
+    assert(envp != NULL);
+    struct env* penv;
+    int i;
+    for (penv = child->env, i = 0; penv != NULL; penv = penv->next, i++) {
+        const char* name = penv->name;
+        const char* value = penv->value;
+        char* s = (char*)malloc(strlen(name) + strlen(value) + 2);
+        assert(s != NULL);
+        sprintf(s, "%s=%s", name, value);
+        envp[i] = s;
+    }
+    envp[i] = NULL;
 
+    write_ok(fd);
     setblock(fd);
-    start_master(fd, nargs, args);
+    start_master(fd, nargs, args, envp);
 }
 
 static void
