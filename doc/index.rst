@@ -35,7 +35,7 @@ sending a command to a master machine.
 Requirements
 ============
 
-nexec (and fsyscall) works on FreeBSD/amd64.
+nexec (and fsyscall) works on FreeBSD 9.1/amd64.
 
 Download
 ========
