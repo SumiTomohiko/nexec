@@ -70,7 +70,7 @@ public class NexecClient {
 
     private static final String ENCODING = "UTF-8";
 
-    public void run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links) throws ProtocolException, InterruptedException, IOException {
+    public int run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links) throws ProtocolException, InterruptedException, IOException {
         Socket sock = new Socket(server, port);
         try {
             StreamPair pair = new StreamPair();
@@ -81,7 +81,7 @@ public class NexecClient {
             doExec(pair, args);
 
             sock.setTcpNoDelay(true);
-            new Application().run(
+            return new Application().run(
                     pair.in, pair.out,
                     stdin, stdout, stderr,
                     permissions, links);
