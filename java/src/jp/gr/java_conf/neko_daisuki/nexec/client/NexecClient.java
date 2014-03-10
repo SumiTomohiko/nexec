@@ -17,6 +17,7 @@ import java.util.Set;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
+import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Slave;
 
 public class NexecClient {
 
@@ -70,7 +71,7 @@ public class NexecClient {
 
     private static final String ENCODING = "UTF-8";
 
-    public int run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links) throws ProtocolException, InterruptedException, IOException {
+    public int run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links, Slave.Listener listener) throws ProtocolException, InterruptedException, IOException {
         Socket sock = new Socket(server, port);
         try {
             StreamPair pair = new StreamPair();
@@ -84,7 +85,7 @@ public class NexecClient {
             return new Application().run(
                     pair.in, pair.out,
                     stdin, stdout, stderr,
-                    permissions, links);
+                    permissions, links, listener);
         }
         finally {
             sock.close();
@@ -107,7 +108,7 @@ public class NexecClient {
             client.run(
                     server, port, params,
                     stdin, stdout, stderr,
-                    env, perm, links);
+                    env, perm, links, null);
         }
         catch (Exception e) {
             e.printStackTrace();
