@@ -1,3 +1,4 @@
+*.log
 .gdb_history
 /Makefile
 /cmake_install.cmake
