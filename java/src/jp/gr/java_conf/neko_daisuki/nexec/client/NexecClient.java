@@ -71,6 +71,8 @@ public class NexecClient {
 
     private static final String ENCODING = "UTF-8";
 
+    private Application mApplication;
+
     public int run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links, Slave.Listener listener) throws ProtocolException, InterruptedException, IOException {
         Socket sock = new Socket(server, port);
         try {
@@ -82,7 +84,8 @@ public class NexecClient {
             doExec(pair, args);
 
             sock.setTcpNoDelay(true);
-            return new Application().run(
+            mApplication = new Application();
+            return mApplication.run(
                     pair.in, pair.out,
                     stdin, stdout, stderr,
                     permissions, links, listener);
@@ -90,6 +93,10 @@ public class NexecClient {
         finally {
             sock.close();
         }
+    }
+
+    public void cancel() {
+        mApplication.cancel();
     }
 
     public static void main(String[] args) {
