@@ -2,6 +2,8 @@
 .gdb_history
 /Makefile
 /cmake_install.cmake
+/java/.gradle
+/java/build
 CMakeCache.txt
 CMakeFiles
 configure.conf
