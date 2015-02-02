@@ -145,6 +145,16 @@ count_env(struct env* env)
     return n;
 }
 
+static char*
+format_env(const char* name, const char* value)
+{
+    char* s = (char*)malloc(strlen(name) + strlen(value) + 2);
+    assert(s != NULL);
+    sprintf(s, "%s=%s", name, value);
+
+    return s;
+}
+
 static void
 do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
 {
@@ -176,18 +186,15 @@ do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
     args[0] = exe;  /* This is not beautiful. */
 
     int nenv = count_env(child->env);
-    char** envp = (char**)malloc(sizeof(char*) * (nenv + 1));
+    char** envp = (char**)malloc(sizeof(char*) * (nenv + 1 /* PATH */ + 1 /* NULL */));
     assert(envp != NULL);
     struct env* penv;
     int i;
     for (penv = child->env, i = 0; penv != NULL; penv = penv->next, i++) {
-        const char* name = penv->name;
-        const char* value = penv->value;
-        char* s = (char*)malloc(strlen(name) + strlen(value) + 2);
-        assert(s != NULL);
-        sprintf(s, "%s=%s", name, value);
-        envp[i] = s;
+        envp[i] = format_env(penv->name, penv->value);
     }
+    envp[i] = format_env("PATH", "/usr/local/bin:/usr/bin:/bin");
+    i++;
     envp[i] = NULL;
 
     write_ok(fd);
