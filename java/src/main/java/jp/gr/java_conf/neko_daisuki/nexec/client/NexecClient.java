@@ -71,7 +71,13 @@ public class NexecClient {
 
     private Application mApplication;
 
-    public int run(String server, int port, String[] args, String currentDirectory, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links, Slave.Listener listener) throws ProtocolException, InterruptedException, IOException {
+    public int run(String server, int port, String[] args,
+                    String currentDirectory, InputStream stdin,
+                    OutputStream stdout, OutputStream stderr, Environment env,
+                    Permissions permissions, Links links,
+                    Slave.Listener listener, String resourceDirectory)
+                    throws ProtocolException, InterruptedException,
+                           IOException {
         Socket sock = new Socket(server, port);
         try {
             StreamPair pair = new StreamPair();
@@ -87,7 +93,7 @@ public class NexecClient {
                     pair.in, pair.out,
                     currentDirectory,
                     stdin, stdout, stderr,
-                    permissions, links, listener);
+                    permissions, links, listener, resourceDirectory);
         }
         finally {
             sock.close();
@@ -114,7 +120,7 @@ public class NexecClient {
             client.run(
                     server, port, params, args[2],
                     stdin, stdout, stderr,
-                    env, perm, links, null);
+                    env, perm, links, null, "/tmp");
         }
         catch (Exception e) {
             e.printStackTrace();
