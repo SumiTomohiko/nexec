@@ -1,7 +1,5 @@
 package jp.gr.java_conf.neko_daisuki.nexec.client;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
