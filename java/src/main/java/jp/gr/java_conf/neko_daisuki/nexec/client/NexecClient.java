@@ -16,6 +16,7 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Slave;
+import jp.gr.java_conf.neko_daisuki.fsyscall.util.NormalizedPath;
 
 public class NexecClient {
 
@@ -72,7 +73,7 @@ public class NexecClient {
     private Application mApplication;
 
     public int run(String server, int port, String[] args,
-                    String currentDirectory, InputStream stdin,
+                    NormalizedPath currentDirectory, InputStream stdin,
                     OutputStream stdout, OutputStream stderr, Environment env,
                     Permissions permissions, Links links,
                     Slave.Listener listener, String resourceDirectory)
@@ -118,7 +119,7 @@ public class NexecClient {
         Links links = new Links();
         try {
             client.run(
-                    server, port, params, args[2],
+                    server, port, params, new NormalizedPath(args[2]),
                     stdin, stdout, stderr,
                     env, perm, links, null, "/tmp");
         }
