@@ -1,7 +1,5 @@
 package jp.gr.java_conf.neko_daisuki.nexec.client;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,6 +16,7 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Slave;
+import jp.gr.java_conf.neko_daisuki.fsyscall.util.NormalizedPath;
 
 public class NexecClient {
 
@@ -73,7 +72,13 @@ public class NexecClient {
 
     private Application mApplication;
 
-    public int run(String server, int port, String[] args, InputStream stdin, OutputStream stdout, OutputStream stderr, Environment env, Permissions permissions, Links links, Slave.Listener listener) throws ProtocolException, InterruptedException, IOException {
+    public int run(String server, int port, String[] args,
+                    NormalizedPath currentDirectory, InputStream stdin,
+                    OutputStream stdout, OutputStream stderr, Environment env,
+                    Permissions permissions, Links links,
+                    Slave.Listener listener, String resourceDirectory)
+                    throws ProtocolException, InterruptedException,
+                           IOException {
         Socket sock = new Socket(server, port);
         try {
             StreamPair pair = new StreamPair();
@@ -87,8 +92,9 @@ public class NexecClient {
             mApplication = new Application();
             return mApplication.run(
                     pair.in, pair.out,
+                    currentDirectory,
                     stdin, stdout, stderr,
-                    permissions, links, listener);
+                    permissions, links, listener, resourceDirectory);
         }
         finally {
             sock.close();
@@ -113,9 +119,9 @@ public class NexecClient {
         Links links = new Links();
         try {
             client.run(
-                    server, port, params,
+                    server, port, params, new NormalizedPath(args[2]),
                     stdin, stdout, stderr,
-                    env, perm, links, null);
+                    env, perm, links, null, "/tmp");
         }
         catch (Exception e) {
             e.printStackTrace();
