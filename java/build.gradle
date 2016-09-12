@@ -22,6 +22,9 @@ repositories {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':fsyscall')
+
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 }
 
 // vim: filetype=groovy tabstop=4 shiftwidth=4 expandtab softtabstop=4
