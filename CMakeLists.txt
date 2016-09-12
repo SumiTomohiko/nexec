@@ -25,6 +25,11 @@ add_custom_target(java-clean COMMAND cd java && rm -rf bin)
 # shortcuts
 add_custom_target(j DEPENDS java)
 
-install(FILES nexecd.conf DESTINATION ${CMAKE_INSTALL_PREFIX}/etc)
+install(CODE "
+    if (NOT EXISTS \"${CMAKE_INSTALL_PREFIX}/etc/nexecd.conf\")
+        file(INSTALL \"nexecd.conf\"
+             DESTINATION \"${CMAKE_INSTALL_PREFIX}/etc\")
+    endif()
+")
 
 # vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
