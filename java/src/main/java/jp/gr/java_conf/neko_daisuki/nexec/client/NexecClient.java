@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallReadableChannel;
+import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallWritableChannel;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
@@ -41,10 +44,10 @@ public class NexecClient {
         }
     }
 
-    private static class StreamPair {
+    private static class ChannelPair {
 
-        public InputStream in;
-        public OutputStream out;
+        public SyscallReadableChannel in;
+        public SyscallWritableChannel out;
     }
 
     private static class Buffer {
@@ -79,16 +82,17 @@ public class NexecClient {
                     Slave.Listener listener, String resourceDirectory)
                     throws ProtocolException, InterruptedException,
                            IOException {
-        Socket sock = new Socket(server, port);
+        InetSocketAddress address = new InetSocketAddress(server, port);
+        SocketChannel sock = SocketChannel.open(address);
         try {
-            StreamPair pair = new StreamPair();
-            pair.in = sock.getInputStream();
-            pair.out = sock.getOutputStream();
+            ChannelPair pair = new ChannelPair();
+            pair.in = new SyscallReadableChannel(sock);
+            pair.out = new SyscallWritableChannel(sock);
 
             sendEnvironment(pair, env);
             doExec(pair, args);
 
-            sock.setTcpNoDelay(true);
+            sock.socket().setTcpNoDelay(true);
             mApplication = new Application();
             return mApplication.run(
                     pair.in, pair.out,
@@ -129,7 +133,7 @@ public class NexecClient {
         }
     }
 
-    private void doSetEnv(StreamPair pair, String name, String value) throws IOException, ProtocolException {
+    private void doSetEnv(ChannelPair pair, String name, String value) throws IOException, ProtocolException {
         Buffer buffer = new Buffer("SET_ENV");
         buffer.append(name);
         buffer.append(value);
@@ -139,7 +143,7 @@ public class NexecClient {
         readOkOrDie(pair.in);
     }
 
-    private void doExec(StreamPair pair, String[] args) throws IOException, ProtocolException {
+    private void doExec(ChannelPair pair, String[] args) throws IOException, ProtocolException {
         Buffer buffer = new Buffer("EXEC");
         for (String a: args) {
             buffer.append(a);
@@ -150,13 +154,13 @@ public class NexecClient {
         readOkOrDie(pair.in);
     }
 
-    private String readLine(InputStream in) throws IOException, ProtocolException {
+    private String readLine(SyscallReadableChannel in) throws IOException, ProtocolException {
         List<Byte> buffer = new ArrayList<Byte>();
-        int c;
-        while ((c = in.read()) != '\r') {
-            buffer.add(Byte.valueOf((byte)c));
+        byte c;
+        while ((c = in.readByte()) != '\r') {
+            buffer.add(Byte.valueOf(c));
         }
-        if (in.read() != '\n') {
+        if (in.readByte() != '\n') {
             throw new ProtocolException("invalid line terminator");
         }
         byte[] bytes = new byte[buffer.size()];
@@ -166,7 +170,7 @@ public class NexecClient {
         return new String(bytes, ENCODING).trim();
     }
 
-    private void readOkOrDie(InputStream in) throws IOException, ProtocolException {
+    private void readOkOrDie(SyscallReadableChannel in) throws IOException, ProtocolException {
         String line = readLine(in);
         if (!line.equals("OK")) {
             String fmt = "request was refused: %s";
@@ -174,7 +178,7 @@ public class NexecClient {
         }
     }
 
-    private void sendEnvironment(StreamPair pair, Environment env) throws IOException, ProtocolException {
+    private void sendEnvironment(ChannelPair pair, Environment env) throws IOException, ProtocolException {
         for (String name: env.nameSet()) {
             doSetEnv(pair, name, env.get(name));
         }
