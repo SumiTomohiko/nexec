@@ -5,7 +5,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <fsyscall/private/die.h>
 #include <nexec/util.h>
 
 static void
@@ -14,7 +13,7 @@ die_if_timeout(time_t t0)
     if (time(NULL) - t0 < 60) {
         return;
     }
-    die(1, "timeout");
+    die("timeout");
 }
 
 static char
@@ -33,7 +32,7 @@ read_char(int fd)
         nanosleep(&rqtp, NULL);
     }
     if (n == -1) {
-        die(1, "cannot read a next char: %s");
+        die("cannot read a next char: %s", strerror(errno));
     }
 
     return c;
@@ -51,11 +50,11 @@ read_line(int fd, char* buf, size_t bufsize)
     }
     if (p == pend) {
         p[-1] = '\0';
-        die(1, "too long request: %s", buf);
+        die("too long request: %s", buf);
     }
 
     if (read_char(fd) != '\n') {
-        die(1, "invalid line terminator.");
+        die("invalid line terminator.");
     }
 
     *p = '\0';

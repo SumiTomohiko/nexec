@@ -20,29 +20,23 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
-#include <fsyscall/private/die.h>
 #include <nexec/config.h>
 #include <nexec/nexecd.h>
 #include <nexec/util.h>
-
-#define SETTINGS_DIR    NEXEC_INSTALL_PREFIX "/etc/nexecd"
 
 static int
 make_bound_socket(struct addrinfo* ai)
 {
     int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
-        die(1, "socket() failed");
+        die("socket() failed: %s", strerror(errno));
     }
     int on = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
-        die(1, "setsockopt() failed");
+        die("setsockopt() failed: %s", strerror(errno));
     }
     if (bind(sock, ai->ai_addr, ai->ai_addrlen) != 0) {
-        die(1, "bind() failed");
+        die("bind() failed: %s", strerror(errno));
     }
     return sock;
 }
@@ -86,17 +80,17 @@ static void
 listen_or_die(int sock)
 {
     if (listen(sock, 0) != 0) {
-        die(1, "listen() failed for socket %d", sock);
+        die("listen() failed for socket %d: %s", sock, strerror(errno));
     }
 }
 
 static void
 read_config_or_die(struct config* config)
 {
-    const char* path = SETTINGS_DIR "/main.conf";
+    const char* path = NEXEC_INSTALL_PREFIX "/etc/nexecd.conf";
     FILE* fpin = fopen(path, "r");
     if (fpin == NULL) {
-        die(1, "cannot open %s", path);
+        die("cannot open %s: %s", path, strerror(errno));
     }
 
     parser_initialize(config);
@@ -113,7 +107,7 @@ fork_or_die()
 {
     pid_t pid = fork();
     if (pid == -1) {
-        die(1, "fork failed");
+        die("fork failed: %s", strerror(errno));
     }
     return pid;
 }
@@ -142,7 +136,7 @@ static void
 daemon_or_die()
 {
     if (daemon(0, 0) != 0) {
-        die(1, "daemon() failed");
+        die("daemon() failed: %s", strerror(errno));
     }
 }
 
@@ -153,25 +147,25 @@ set_user_group_or_die(struct config* config)
     const char* groupname = config->daemon.group;
     struct group* group = getgrnam(groupname);
     if (group == NULL) {
-        die(1, "cannot find group: %s: %s", groupname);
+        die("cannot find group: %s: %s", groupname, strerror(errno));
     }
     gid_t gid = group->gr_gid;
     if (setgid(gid) != 0) {
-        die(1, "cannot set group: %s (%d)", groupname, gid);
+        die("cannot set group: %s (%d): %s", groupname, gid, strerror(errno));
     }
     const char* username = config->daemon.user;
     struct passwd* user = getpwnam(username);
     if (user == NULL) {
-        die(1, "cannot find user: %s", user);
+        die("cannot find user: %s: %s", user, strerror(errno));
     }
     uid_t uid = user->pw_uid;
     if (setuid(uid) != 0) {
-        die(1, "cannot set user: %s (%d)", user, uid);
+        die("cannot set user: %s (%d): %s", user, uid, strerror(errno));
     }
 }
 
 static void
-nexecd_main(SSL_CTX *ctx)
+nexecd_main()
 {
     struct addrinfo hints;
     bzero(&hints, sizeof(hints));
@@ -182,7 +176,7 @@ nexecd_main(SSL_CTX *ctx)
     struct addrinfo* ai;
     int ecode = getaddrinfo(NULL, "57005", &hints, &ai);
     if (ecode != 0) {
-        die(1, "getaddrinfo() failed: %s", gai_strerror(ecode));
+        die("getaddrinfo() failed: %s", gai_strerror(ecode));
     }
     int nsock = 0;
     struct addrinfo* res;
@@ -199,11 +193,10 @@ nexecd_main(SSL_CTX *ctx)
         listen_or_die(socks[i]);
     }
     if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-        die(1, "signal() failed");
+        die("signal() failed: %s", strerror(errno));
     }
 
     struct config config;
-    config.ssl.ctx = ctx;
     config.daemon.user[0] = config.daemon.group[0] = '\0';
     read_config_or_die(&config);
 
@@ -218,14 +211,14 @@ nexecd_main(SSL_CTX *ctx)
         socklen_t addrlen = sizeof(storage);
         int fd = accept(sock, addr, &addrlen);
         if (fd == -1) {
-            die(1, "accept() failed");
+            die("accept() failed: %s", strerror(errno));
         }
         set_tcp_nodelay_or_die(fd);
 
         char host[NI_MAXHOST], serv[NI_MAXSERV];
         int ecode = getnameinfo(addr, addrlen, host, sizeof(host), serv, sizeof(serv), NI_NUMERICHOST | NI_NUMERICSERV);
         if (ecode != 0) {
-            die(1, "getnameinfo() failed: %s", gai_strerror(ecode));
+            die("getnameinfo() failed: %s", gai_strerror(ecode));
         }
         syslog(LOG_INFO, "accepted: host=%s, port=%s", host, serv);
 
@@ -237,35 +230,6 @@ nexecd_main(SSL_CTX *ctx)
     }
 
     syslog(LOG_INFO, "terminated.");
-}
-
-static SSL_CTX *
-ssl_initialize()
-{
-    SSL_library_init();
-    SSL_load_error_strings();
-
-    SSL_CTX *ctx = SSL_CTX_new(SSLv23_server_method());
-    if (ctx == NULL) {
-        die(1, "cannot SSL_CTX_new(3)");
-    }
-    int ret = SSL_CTX_use_certificate_file(ctx, SETTINGS_DIR "/cert.pem",
-                                           SSL_FILETYPE_PEM);
-    if (ret != 1) {
-        ERR_print_errors_fp(stderr);
-        die(1, "cannot SSL_CTX_use_certificate_file(3)");
-    }
-    ret = SSL_CTX_use_PrivateKey_file(ctx, SETTINGS_DIR "/private.pem",
-                                      SSL_FILETYPE_PEM);
-    if (ret != 1) {
-        ERR_print_errors_fp(stderr);
-        die(1, "cannot SSL_CTX_use_PrivateKey_file(3)");
-    }
-    if (!SSL_CTX_check_private_key(ctx)) {
-        die(1, "wrong keys");
-    }
-
-    return ctx;
 }
 
 int
@@ -288,11 +252,7 @@ main(int argc, char* argv[])
     openlog(getprogname(), LOG_PID, LOG_USER);
     syslog(LOG_INFO, "initializing.");
     memory_initialize();
-
-    SSL_CTX *ctx = ssl_initialize();
-    nexecd_main(ctx);
-    SSL_CTX_free(ctx);
-
+    nexecd_main();
     memory_dispose();
     closelog();
 

@@ -25,12 +25,9 @@ add_custom_target(java-clean COMMAND cd java && rm -rf bin)
 # shortcuts
 add_custom_target(j DEPENDS java)
 
-set(SETTINGS_DIR ${CMAKE_INSTALL_PREFIX}/etc/nexecd)
-install(DIRECTORY DESTINATION ${SETTINGS_DIR})
 install(CODE "
     if (NOT EXISTS \"${SETTINGS_DIR}/main.conf\")
-        file(INSTALL \"main.conf\"
-             DESTINATION ${SETTINGS_DIR})
+        file(INSTALL \"main.conf\" DESTINATION ${SETTINGS_DIR})
     endif()
 ")
 

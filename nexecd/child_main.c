@@ -10,9 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <fsyscall/private/die.h>
-#include <fsyscall/run_master.h>
-#include <openssl/ssl.h>
+#include <fsyscall/start_master.h>
 
 #include <nexec/nexecd.h>
 #include <nexec/util.h>
@@ -55,7 +53,7 @@ die_if_invalid_byte(char c)
     if (isprint(c)) {
         return;
     }
-    die(1, "invalid byte found: 0x%02x", 0xff & c);
+    die("invalid byte found: 0x%02x", 0xff & c);
 }
 
 static void
@@ -84,24 +82,24 @@ write_ng(int fd, const char* msg)
 }
 
 static void
-start_master(SSL_CTX* ctx, int fd, int argc, char* argv[], char* const envp[])
+start_master(int rfd, int argc, char* argv[], char* const envp[])
 {
-    SSL* ssl = SSL_new(ctx);
-    if (ssl == NULL) {
-        die(1, "cannot SSL_new(3)");
-    }
-    if (SSL_set_fd(ssl, fd) != 1) {
-        die(1, "cannot SSL_set_fd(3)");
-    }
-    if (SSL_accept(ssl) != 1) {
-        die(1, "cannot SSL_accept(3)");
+    int wfd = dup(rfd);
+    if (wfd == -1) {
+        die("dup() failed: %s", strerror(errno));
     }
 
-    int status = fsyscall_run_master_ssl(ssl, argc, argv, envp);
+    fsyscall_start_master(rfd, wfd, argc, argv, envp);
+    /* NOTREACHED */
+}
 
-    SSL_free(ssl);
-
-    exit(status);
+static void
+setblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == -1) {
+        die("fcntl() failed to be blocking: %s", strerror(errno));
+    }
 }
 
 static char*
@@ -200,8 +198,8 @@ do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
     envp[i] = NULL;
 
     write_ok(fd);
-    start_master(child->config->ssl.ctx, fd, nargs, args, envp);
-    /* NOTREACHED */
+    setblock(fd);
+    start_master(fd, nargs, args, envp);
 }
 
 static void
@@ -231,7 +229,7 @@ setnonblock(int fd)
 {
     int flags = fcntl(fd, F_GETFL);
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        die(1, "fcntl() failed to be non-blocking");
+        die("fcntl() failed to be non-blocking: %s", strerror(errno));
     }
 }
 

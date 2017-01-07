@@ -7,7 +7,6 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <fsyscall/private/die.h>
 #include <nexec/util.h>
 
 static void
@@ -18,7 +17,7 @@ write_all(int fd, const void* buf, size_t bufsize)
         const void* p = (void*)((uintptr_t)buf + nbytes);
         ssize_t n = write(fd, p, bufsize - nbytes);
         if ((n == -1) && (errno != EAGAIN)) {
-            die(1, "cannot write: %s");
+            die("cannot write: %s", strerror(errno));
         }
         nbytes += n;
     }
