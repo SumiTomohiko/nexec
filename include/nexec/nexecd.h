@@ -2,6 +2,11 @@
 #define NEXEC_NEXECD_H_INCLUDED
 
 #include <sys/param.h>
+#include <openssl/ssl.h>
+
+struct ssl {
+    SSL_CTX *ctx;
+};
 
 struct daemon {
     char user[16];
@@ -17,6 +22,7 @@ struct mapping {
 struct config {
     struct daemon daemon;
     struct mapping* mappings;
+    struct ssl ssl;
 };
 
 /* child_main.c */

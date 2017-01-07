@@ -8,7 +8,6 @@ struct env {
 };
 
 struct env* alloc_env_or_die();
-void die(const char*, ...);
 void read_line(int, char*, size_t);
 void set_tcp_nodelay_or_die(int);
 void writeln(int, const char*);

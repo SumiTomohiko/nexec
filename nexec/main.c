@@ -15,6 +15,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <fsyscall/private/die.h>
 #include <fsyscall/start_slave.h>
 
 #include <nexec/config.h>
@@ -82,7 +83,7 @@ die_if_ng(int fd)
     if (strcmp(buf, "OK") == 0) {
         return;
     }
-    die("request failed: %s", buf);
+    die(1, "request failed: %s", buf);
 }
 
 static void
@@ -170,7 +171,7 @@ nexec_main(int argc, char* argv[], struct env* penv)
     struct addrinfo* ai;
     int ecode = getaddrinfo(hostname, servname, &hints, &ai);
     if (ecode != 0) {
-        die("getaddrinfo() failed: %s", gai_strerror(ecode));
+        die(1, "getaddrinfo() failed: %s", gai_strerror(ecode));
     }
     int sock = -1;
     struct addrinfo* res;
@@ -179,7 +180,7 @@ nexec_main(int argc, char* argv[], struct env* penv)
     }
     freeaddrinfo(ai);
     if (sock == -1) {
-        die("connecting to nexecd failed.");
+        die(1, "connecting to nexecd failed.");
     }
     set_tcp_nodelay_or_die(sock);
 
