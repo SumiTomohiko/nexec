@@ -30,7 +30,7 @@ install(DIRECTORY DESTINATION ${SETTINGS_DIR})
 install(CODE "
     if (NOT EXISTS \"${SETTINGS_DIR}/main.conf\")
         file(INSTALL \"main.conf\"
-             DESTINATION \"${SETTINGS_DIR}/main.conf\")
+             DESTINATION ${SETTINGS_DIR})
     endif()
 ")
 
