@@ -76,12 +76,12 @@ public class NexecClient {
     private Application mApplication;
 
     public int run(String server, int port, String[] args,
-                    NormalizedPath currentDirectory, InputStream stdin,
-                    OutputStream stdout, OutputStream stderr, Environment env,
-                    Permissions permissions, Links links,
-                    Slave.Listener listener, String resourceDirectory)
-                    throws ProtocolException, InterruptedException,
-                           IOException {
+                   NormalizedPath currentDirectory, InputStream stdin,
+                   OutputStream stdout, OutputStream stderr, Environment env,
+                   Permissions permissions, Links links,
+                   Slave.Listener listener, String resourceDirectory)
+                   throws ProtocolException, InterruptedException,
+                          IOException {
         InetSocketAddress address = new InetSocketAddress(server, port);
         SocketChannel sock = SocketChannel.open(address);
         try {
