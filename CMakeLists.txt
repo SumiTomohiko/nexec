@@ -22,8 +22,6 @@ add_subdirectory(rc.d)
 add_custom_target(doc COMMAND cd doc && make)
 add_custom_target(java COMMAND cd java && ant)
 add_custom_target(java-clean COMMAND cd java && rm -rf bin)
-# shortcuts
-add_custom_target(j DEPENDS java)
 
 set(SETTINGS_DIR ${CMAKE_INSTALL_PREFIX}/etc/nexecd)
 install(DIRECTORY DESTINATION ${SETTINGS_DIR})
