@@ -10,32 +10,13 @@
 #include <fsyscall/private/die.h>
 #include <nexec/util.h>
 
-static void
-die_if_timeout(time_t t0)
-{
-    if (time(NULL) - t0 < 60) {
-        return;
-    }
-    die(1, "timeout");
-}
-
 static char
 read_char(SSL* ssl)
 {
-    time_t t0 = time(NULL);
-
-    ssize_t n;
+    int n;
     char c;
     while ((n = SSL_read(ssl, &c, sizeof(c))) != sizeof(c)) {
-        die_if_timeout(t0);
-
-        struct timespec rqtp;
-        rqtp.tv_sec = 0;
-        rqtp.tv_nsec = 1000000;
-        nanosleep(&rqtp, NULL);
-    }
-    if (n == -1) {
-        die(1, "cannot read a next char");
+        sslutil_handle_error(ssl, n, "SSL_read(3)");
     }
 
     return c;

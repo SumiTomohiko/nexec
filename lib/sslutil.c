@@ -24,7 +24,7 @@ wait_io(int maxfd, fd_set* rfds, fd_set* wfds)
     case -1:
         die(1, "select(2) failed");
     case 0:
-        die(1, "SSL connection timeouted");
+        diex(1, "SSL connection timeouted");
     case 1:
         break;
     default:
@@ -65,8 +65,7 @@ sslutil_handle_error(SSL* ssl, int ret, const char* desc)
         because = "SSL_ERROR_SYSCALL";
         break;
     case SSL_ERROR_ZERO_RETURN:
-        because = "SSL_ERROR_ZERO_RETURN";
-        break;
+        diex(1, "the peer is shutdown (SSL_ERROR_ZERO_RETURN)");
     case SSL_ERROR_WANT_CONNECT:
         because = "SSL_ERROR_WANT_CONNECT";
         break;
