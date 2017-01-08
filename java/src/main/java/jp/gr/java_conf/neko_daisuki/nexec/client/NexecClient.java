@@ -79,7 +79,8 @@ public class NexecClient {
 
     private Application mApplication;
 
-    public int run(String server, int port, SSLContext context, String[] args,
+    public int run(String server, int port, SSLContext context, String userName,
+                   String password, String[] args,
                    NormalizedPath currentDirectory, InputStream stdin,
                    OutputStream stdout, OutputStream stderr, Environment env,
                    Permissions permissions, Links links,
@@ -98,6 +99,7 @@ public class NexecClient {
             pair.in = new SyscallReadableChannel(front2back.source());
             pair.out = new SyscallWritableChannel(back2front.sink());
 
+            doLogin(pair, userName, password);
             sendEnvironment(pair, env);
             doExec(pair, args);
 
@@ -135,9 +137,9 @@ public class NexecClient {
             context.init(null, null, null);
 
             client.run(
-                    server, port, context, params, new NormalizedPath(args[2]),
-                    stdin, stdout, stderr,
-                    env, perm, links, null, "/tmp");
+                    server, port, context, "anonymous", "anonymous", params,
+                    new NormalizedPath(args[2]), stdin, stdout, stderr, env,
+                    perm, links, null, "/tmp");
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -149,6 +151,18 @@ public class NexecClient {
         Buffer buffer = new Buffer("SET_ENV");
         buffer.append(name);
         buffer.append(value);
+        buffer.endOfLine();
+        pair.out.write(buffer.getBytes());
+
+        readOkOrDie(pair.in);
+    }
+
+    private void doLogin(ChannelPair pair, String userName,
+                         String password) throws IOException,
+                                                 ProtocolException {
+        Buffer buffer = new Buffer("LOGIN");
+        buffer.append(userName);
+        buffer.append(password);
         buffer.endOfLine();
         pair.out.write(buffer.getBytes());
 
