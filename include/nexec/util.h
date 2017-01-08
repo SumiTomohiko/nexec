@@ -4,18 +4,15 @@
 #include <openssl/ssl.h>
 
 struct env {
-    struct env* next;
-    const char* name;
-    const char* value;
+	struct env	*next;
+	const char	*name;
+	const char	*value;
 };
 
-struct env* alloc_env_or_die();
-void read_line(SSL*, char*, size_t);
-void set_tcp_nodelay_or_die(int);
-void writeln(SSL*, const char*);
-void sslutil_handle_error(SSL*, int, const char*);
+struct env	*alloc_env_or_die();
+void		read_line(SSL *, char *, size_t);
+void		set_tcp_nodelay_or_die(int);
+void		writeln(SSL *, const char *);
+void		sslutil_handle_error(SSL *, int, const char *);
 
 #endif
-/**
- * vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
- */

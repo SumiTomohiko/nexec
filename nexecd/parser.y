@@ -6,12 +6,13 @@
 
 #include <nexec/nexecd.h>
 
-static struct config* parser_config;
+static struct config *parser_config;
 
 void
-parser_initialize(struct config* config)
+parser_initialize(struct config *config)
 {
-    parser_config = config;
+
+	parser_config = config;
 }
 
 /**
@@ -22,15 +23,16 @@ parser_initialize(struct config* config)
 extern int yylex();
 
 static int
-yyerror(const char* msg)
+yyerror(const char *msg)
 {
+
     fprintf(stderr, "parser error: %s\n", msg);
-    return 0;   /* No one use this value? */
+    return (0);		/* No one use this value? */
 }
 %}
 %union {
-    struct mapping* mapping;
-    char* string;
+	struct mapping	*mapping;
+	char		*string;
 }
 /*
  * <machine/trap.h> on FreeBSD 9.1 defines T_USER. To avoid the compile error,
@@ -44,41 +46,38 @@ config  : config T_NEWLINE section
         | section
         ;
 section : T_MAPPING T_NEWLINE mappings T_NEWLINE T_END {
-            parser_config->mappings = $3;
+		parser_config->mappings = $3;
         }
         | T_DAEMON T_NEWLINE
                 T_USER_ T_COLON T_STRING T_NEWLINE
                 T_GROUP T_COLON T_STRING T_NEWLINE
                 T_END {
-            assert(strlen($5) < sizeof(parser_config->daemon.user));
-            assert(strlen($9) < sizeof(parser_config->daemon.group));
-            sprintf(parser_config->daemon.user, "%s", $5);
-            sprintf(parser_config->daemon.group, "%s", $9);
+		assert(strlen($5) < sizeof(parser_config->daemon.user));
+		assert(strlen($9) < sizeof(parser_config->daemon.group));
+		sprintf(parser_config->daemon.user, "%s", $5);
+		sprintf(parser_config->daemon.group, "%s", $9);
         }
         | /* empty */
         ;
 mappings
         : mappings T_NEWLINE mapping {
-            $3->next = $1;
-            $$ = $3;
+		$3->next = $1;
+		$$ = $3;
         }
         | mapping {
-            $$ = $1;
+		$$ = $1;
         }
         ;
 mapping : T_STRING T_COLON T_STRING {
-            assert(strlen($1) + 1 < sizeof($$->name));
-            assert(strlen($3) + 1 < sizeof($$->path));
-            $$ = memory_allocate(sizeof(*$$));
-            strcpy($$->name, $1);
-            strcpy($$->path, $3);
-            $$->next = NULL;
+		assert(strlen($1) + 1 < sizeof($$->name));
+		assert(strlen($3) + 1 < sizeof($$->path));
+		$$ = memory_allocate(sizeof(*$$));
+		strcpy($$->name, $1);
+		strcpy($$->path, $3);
+		$$->next = NULL;
         }
         | /* empty */ {
-            $$ = NULL;
+		$$ = NULL;
         }
         ;
 %%
-/**
- * vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
- */

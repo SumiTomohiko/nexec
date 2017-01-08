@@ -5,38 +5,35 @@
 #include <openssl/ssl.h>
 
 struct ssl {
-    SSL_CTX *ctx;
+	SSL_CTX	*ctx;
 };
 
 struct daemon {
-    char user[16];
-    char group[16];
+	char	user[16];
+	char	group[16];
 };
 
 struct mapping {
-    struct mapping* next;
-    char name[32];
-    char path[MAXPATHLEN];
+	struct mapping	*next;
+	char		name[32];
+	char		path[MAXPATHLEN];
 };
 
 struct config {
-    struct daemon daemon;
-    struct mapping* mappings;
-    struct ssl ssl;
+	struct daemon	daemon;
+	struct mapping	*mappings;
+	struct ssl	ssl;
 };
 
 /* child_main.c */
-void child_main(struct config*, int);
+void	child_main(struct config *, int);
 
 /* memory.c */
-void* memory_allocate(size_t);
-void memory_dispose();
-void memory_initialize();
+void	*memory_allocate(size_t);
+void	memory_dispose();
+void	memory_initialize();
 
 /* parser.y */
-void parser_initialize(struct config*);
+void	parser_initialize(struct config *);
 
 #endif
-/**
- * vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
- */

@@ -10,7 +10,8 @@
 static int
 yywrap()
 {
-    return 1;
+
+	return (1);
 }
 
 static char string[256];
@@ -25,35 +26,35 @@ static char string[256];
 <INITIAL>"mapping"  return T_MAPPING;
 <INITIAL>"\n"       return T_NEWLINE;
 <INITIAL>"\""       {
-    string[0] = '\0';
-    BEGIN STRING;
+	string[0] = '\0';
+	BEGIN STRING;
 }
 <INITIAL>"#"        {
-    BEGIN COMMENT;
+	BEGIN COMMENT;
 }
 <INITIAL>[ \t]      ;
 <INITIAL>.          {
-    abort();
+	abort();
 }
 
 <STRING>"\""        {
-    size_t size = strlen(string) + 1;
-    char* ptr = memory_allocate(size);
-    memcpy(ptr, string, size);
-    yylval.string = ptr;
-    BEGIN INITIAL;
-    return T_STRING;
+	size_t size;
+	char *ptr;
+
+	size = strlen(string) + 1;
+	ptr = memory_allocate(size);
+	memcpy(ptr, string, size);
+	yylval.string = ptr;
+	BEGIN INITIAL;
+	return (T_STRING);
 }
 <STRING>.           {
-    assert(strlen(string) < sizeof(string));
-    strcat(string, yytext);
+	assert(strlen(string) < sizeof(string));
+	strcat(string, yytext);
 }
 
 <COMMENT>"\n"       {
-    BEGIN INITIAL;
+	BEGIN INITIAL;
 }
 <COMMENT>.
 %%
-/**
- * vim: tabstop=4 shiftwidth=4 expandtab softtabstop=4
- */
