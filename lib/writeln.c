@@ -7,24 +7,27 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <openssl/ssl.h>
+
+#include <fsyscall/private/die.h>
 #include <nexec/util.h>
 
 static void
-write_all(int fd, const void* buf, size_t bufsize)
+write_all(SSL* ssl, const void* buf, size_t bufsize)
 {
     size_t nbytes = 0;
     while (nbytes < bufsize) {
         const void* p = (void*)((uintptr_t)buf + nbytes);
-        ssize_t n = write(fd, p, bufsize - nbytes);
-        if ((n == -1) && (errno != EAGAIN)) {
-            die("cannot write: %s", strerror(errno));
+        ssize_t n = SSL_write(ssl, p, bufsize - nbytes);
+        if (n < 0) {
+            die(1, "cannot write");
         }
         nbytes += n;
     }
 }
 
 void
-writeln(int fd, const char* msg)
+writeln(SSL* ssl, const char* msg)
 {
     syslog(LOG_DEBUG, "write: %s", msg);
 
@@ -32,7 +35,7 @@ writeln(int fd, const char* msg)
     size_t bufsize = strlen(msg) + strlen(newline);
     char buf[bufsize + 1];
     sprintf(buf, "%s%s", msg, newline);
-    write_all(fd, buf, bufsize);
+    write_all(ssl, buf, bufsize);
 }
 
 /**

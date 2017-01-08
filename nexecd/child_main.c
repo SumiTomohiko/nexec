@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +11,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <fsyscall/start_master.h>
+#include <fsyscall/private/die.h>
+#include <fsyscall/run_master.h>
+#include <openssl/ssl.h>
 
 #include <nexec/nexecd.h>
 #include <nexec/util.h>
@@ -18,6 +21,7 @@
 struct child {
     struct config* config;
     struct env* env;
+    SSL* ssl;
 };
 
 struct tokenizer {
@@ -53,7 +57,7 @@ die_if_invalid_byte(char c)
     if (isprint(c)) {
         return;
     }
-    die("invalid byte found: 0x%02x", 0xff & c);
+    die(1, "invalid byte found: 0x%02x", 0xff & c);
 }
 
 static void
@@ -67,39 +71,24 @@ die_if_invalid_line(char *s)
 }
 
 static void
-write_ok(int fd)
+write_ok(SSL* ssl)
 {
-    writeln(fd, "OK");
+    writeln(ssl, "OK");
 }
 
 static void
-write_ng(int fd, const char* msg)
+write_ng(SSL* ssl, const char* msg)
 {
     char buf[1024];
     snprintf(buf, sizeof(buf), "NG %s", msg);
     syslog(LOG_ERR, "%s", buf);
-    writeln(fd, buf);
+    writeln(ssl, buf);
 }
 
 static void
-start_master(int rfd, int argc, char* argv[], char* const envp[])
+start_master(SSL* ssl, int argc, char* argv[], char* const envp[])
 {
-    int wfd = dup(rfd);
-    if (wfd == -1) {
-        die("dup() failed: %s", strerror(errno));
-    }
-
-    fsyscall_start_master(rfd, wfd, argc, argv, envp);
-    /* NOTREACHED */
-}
-
-static void
-setblock(int fd)
-{
-    int flags = fcntl(fd, F_GETFL);
-    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) == -1) {
-        die("fcntl() failed to be blocking: %s", strerror(errno));
-    }
+    fsyscall_run_master_ssl(ssl, argc, argv, envp);
 }
 
 static char*
@@ -123,7 +112,7 @@ copy_next_token(struct tokenizer* tokenizer)
 }
 
 static void
-do_set_env(struct child* child, int fd, struct tokenizer* tokenizer)
+do_set_env(struct child* child, struct tokenizer* tokenizer)
 {
     struct env* penv = alloc_env_or_die();
     penv->next = child->env;
@@ -131,7 +120,7 @@ do_set_env(struct child* child, int fd, struct tokenizer* tokenizer)
     penv->value = copy_next_token(tokenizer);
     child->env = penv;
 
-    write_ok(fd);
+    write_ok(child->ssl);
 }
 
 static int
@@ -156,7 +145,7 @@ format_env(const char* name, const char* value)
 }
 
 static void
-do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
+do_exec(struct child* child, struct tokenizer* tokenizer)
 {
 #define MAX_NARGS 64
     char* args[MAX_NARGS];
@@ -169,18 +158,18 @@ do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
         p = get_next_token(tokenizer);
     }
     if (nargs == MAX_NARGS) {
-        write_ng(fd, "too many arguments");
+        write_ng(child->ssl, "too many arguments");
         return;
     }
 #undef MAX_NARGS
     if (nargs == 0) {
-        write_ng(fd, "no arguments given");
+        write_ng(child->ssl, "no arguments given");
         return;
     }
 
     char* exe = find_mapping(child->config, args[0]);
     if (exe == NULL) {
-        write_ng(fd, "command not found");
+        write_ng(child->ssl, "command not found");
         return;
     }
     args[0] = exe;  /* This is not beautiful. */
@@ -197,16 +186,15 @@ do_exec(struct child* child, int fd, struct tokenizer* tokenizer)
     i++;
     envp[i] = NULL;
 
-    write_ok(fd);
-    setblock(fd);
-    start_master(fd, nargs, args, envp);
+    write_ok(child->ssl);
+    start_master(child->ssl, nargs, args, envp);
 }
 
-static void
-handle_request(struct child* child, int fd)
+static bool
+handle_request(struct child* child)
 {
     char line[4096];
-    read_line(fd, line, sizeof(line));
+    read_line(child->ssl, line, sizeof(line));
     syslog(LOG_INFO, "request: %s", line);
     die_if_invalid_line(line);
 
@@ -214,14 +202,15 @@ handle_request(struct child* child, int fd)
     tokenizer.p = line;
     char* token = get_next_token(&tokenizer);
     if (strcmp(token, "EXEC") == 0) {
-        do_exec(child, fd, &tokenizer);
-        return;
+        do_exec(child, &tokenizer);
+        return true;
     }
     if (strcmp(token, "SET_ENV") == 0) {
-        do_set_env(child, fd, &tokenizer);
-        return;
+        do_set_env(child, &tokenizer);
+        return false;
     }
-    write_ng(fd, "unknown command");
+    write_ng(child->ssl, "unknown command");
+    return false;
 }
 
 static void
@@ -229,7 +218,7 @@ setnonblock(int fd)
 {
     int flags = fcntl(fd, F_GETFL);
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-        die("fcntl() failed to be non-blocking: %s", strerror(errno));
+        die(1, "fcntl() failed to be non-blocking");
     }
 }
 
@@ -238,16 +227,31 @@ child_main(struct config* config, int fd)
 {
     setnonblock(fd);
 
+    SSL* ssl = SSL_new(config->ssl.ctx);
+    if (ssl == NULL) {
+        die(1, "cannot SSL_new(3)");
+    }
+    if (SSL_set_fd(ssl, fd) != 1) {
+        die(1, "cannot SSL_set_fd(3)");
+    }
+    int ret;
+    while ((ret = SSL_accept(ssl)) != 1) {
+        sslutil_handle_error(ssl, ret, "SSL_accept(3)");
+    }
+
     struct child child;
     child.config = config;
     child.env = NULL;
+    child.ssl = ssl;
 
-    while (1) {
-        handle_request(&child, fd);
+    while (!handle_request(&child)) {
     }
 
-    /* NOTREACHED */
-    exit(1);
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+    close(fd);
+
+    exit(0);
 }
 
 /**

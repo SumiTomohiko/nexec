@@ -5,6 +5,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <openssl/ssl.h>
+
+#include <fsyscall/private/die.h>
 #include <nexec/util.h>
 
 static void
@@ -13,17 +16,17 @@ die_if_timeout(time_t t0)
     if (time(NULL) - t0 < 60) {
         return;
     }
-    die("timeout");
+    die(1, "timeout");
 }
 
 static char
-read_char(int fd)
+read_char(SSL* ssl)
 {
     time_t t0 = time(NULL);
 
     ssize_t n;
     char c;
-    while (((n = read(fd, &c, sizeof(c))) == -1) && (errno == EAGAIN)) {
+    while ((n = SSL_read(ssl, &c, sizeof(c))) != sizeof(c)) {
         die_if_timeout(t0);
 
         struct timespec rqtp;
@@ -32,29 +35,29 @@ read_char(int fd)
         nanosleep(&rqtp, NULL);
     }
     if (n == -1) {
-        die("cannot read a next char: %s", strerror(errno));
+        die(1, "cannot read a next char");
     }
 
     return c;
 }
 
 void
-read_line(int fd, char* buf, size_t bufsize)
+read_line(SSL* ssl, char* buf, size_t bufsize)
 {
     char* pend = buf + bufsize;
     char* p = buf;
     char c;
-    while ((p < pend) && (c = read_char(fd)) != '\r') {
+    while ((p < pend) && (c = read_char(ssl)) != '\r') {
         *p = c;
         p++;
     }
     if (p == pend) {
         p[-1] = '\0';
-        die("too long request: %s", buf);
+        die(1, "too long request: %s", buf);
     }
 
-    if (read_char(fd) != '\n') {
-        die("invalid line terminator.");
+    if (read_char(ssl) != '\n') {
+        die(1, "invalid line terminator.");
     }
 
     *p = '\0';

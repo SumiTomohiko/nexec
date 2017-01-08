@@ -15,7 +15,9 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <fsyscall/private/die.h>
 #include <fsyscall/start_slave.h>
+#include <openssl/ssl.h>
 
 #include <nexec/config.h>
 #include <nexec/util.h>
@@ -50,7 +52,7 @@ make_connected_socket(struct addrinfo* ai)
 }
 
 static void
-write_exec(int fd, int argc, char* argv[])
+write_exec(SSL* ssl, int argc, char* argv[])
 {
     const char* cmd = "EXEC";
     size_t cmd_size = strlen(cmd);
@@ -70,32 +72,31 @@ write_exec(int fd, int argc, char* argv[])
     }
     *p = '\0';
 
-    writeln(fd, buf);
+    writeln(ssl, buf);
 }
 
 static void
-die_if_ng(int fd)
+die_if_ng(SSL* ssl)
 {
     char buf[4096];
-    read_line(fd, buf, sizeof(buf));
+    read_line(ssl, buf, sizeof(buf));
     syslog(LOG_DEBUG, "read: %s", buf);
     if (strcmp(buf, "OK") == 0) {
         return;
     }
-    die("request failed: %s", buf);
+    die(1, "request failed: %s", buf);
 }
 
+#if 0
 static void
-start_slave(int rfd, int argc, char* argv[])
+start_slave(SSL* ssl, int argc, char* argv[])
 {
-    int wfd = dup(rfd);
-    if (wfd == -1) {
-        err(1, "dup() failed");
-    }
-
-    fsyscall_start_slave(rfd, wfd, argc, argv);
-    /* NOTREACHED */
+    /*
+     * THIS FUNCTION IS NOT IMPLEMENTED.
+     */
+    fsyscall_run_slave_ssl(ssl, argc, argv);
 }
+#endif
 
 static void
 log_starting(int argc, char* argv[])
@@ -116,31 +117,31 @@ log_starting(int argc, char* argv[])
 }
 
 static void
-do_exec(int fd, int argc, char* argv[])
+do_exec(SSL* ssl, int argc, char* argv[])
 {
-    write_exec(fd, argc, argv);
-    die_if_ng(fd);
+    write_exec(ssl, argc, argv);
+    die_if_ng(ssl);
 }
 
 static void
-do_set_env(int fd, struct env* penv)
+do_set_env(SSL* ssl, struct env* penv)
 {
     const char* cmd = "SET_ENV";
     const char* name = penv->name;
     const char* value = penv->value;
     char buf[strlen(cmd) + strlen(name) + strlen(value) + 3];
     sprintf(buf, "%s %s %s", cmd, name, value);
-    writeln(fd, buf);
+    writeln(ssl, buf);
 
-    die_if_ng(fd);
+    die_if_ng(ssl);
 }
 
 static void
-send_env(int fd, struct env* penv)
+send_env(SSL* ssl, struct env* penv)
 {
     struct env* p;
     for (p = penv; p != NULL; p = p->next) {
-        do_set_env(fd, p);
+        do_set_env(ssl, p);
     }
 }
 
@@ -170,7 +171,7 @@ nexec_main(int argc, char* argv[], struct env* penv)
     struct addrinfo* ai;
     int ecode = getaddrinfo(hostname, servname, &hints, &ai);
     if (ecode != 0) {
-        die("getaddrinfo() failed: %s", gai_strerror(ecode));
+        die(1, "getaddrinfo() failed: %s", gai_strerror(ecode));
     }
     int sock = -1;
     struct addrinfo* res;
@@ -179,18 +180,36 @@ nexec_main(int argc, char* argv[], struct env* penv)
     }
     freeaddrinfo(ai);
     if (sock == -1) {
-        die("connecting to nexecd failed.");
+        die(1, "connecting to nexecd failed.");
     }
     set_tcp_nodelay_or_die(sock);
 
     syslog(LOG_INFO, "connected: host=%s, service=%s", hostname, servname);
 
-    send_env(sock, penv);
+    SSL_CTX *ctx = SSL_CTX_new(SSLv23_client_method());
+    if (ctx == NULL) {
+        die(1, "cannot SSL_CTX_new(3)");
+    }
+    SSL* ssl = SSL_new(ctx);
+    if (ssl == NULL) {
+        die(1, "cannot SSL_new(3)");
+    }
+    if (SSL_set_fd(ssl, sock) != 1) {
+        die(1, "cannot SSL_set_fd(3)");
+    }
+    if (SSL_connect(ssl) != 1) {
+        die(1, "cannot SSL_connect(3)");
+    }
+
+    send_env(ssl, penv);
 
     int nargs = argc - 1;
     char** args = argv + 1;
-    do_exec(sock, nargs, args);
-    start_slave(sock, nargs, args);
+    do_exec(ssl, nargs, args);
+#if 0
+    start_slave(ssl, nargs, args);
+#endif
+    exit(1);
     /* NOTREACHED */
     return 1;
 }
