@@ -2,7 +2,7 @@
 <project default="jar">
     <property name="bindir" value="bin"/>
     <property name="destdir" value="${bindir}/classes"/>
-    <property name="libdir" value="libs"/>
+    <property name="libdir" value="@FSYSCALL_DIR@/java/build/libs"/>
 
     <target name="jar" depends="compile">
         <jar basedir="${destdir}" destfile="${bindir}/nexec-client.jar"/>

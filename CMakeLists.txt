@@ -13,6 +13,7 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -O3")
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 include_directories(${INCLUDE_DIR} ${FSYSCALL_DIR}/include)
 configure_file(${INCLUDE_DIR}/nexec/config.h.in ${INCLUDE_DIR}/nexec/config.h)
+configure_file(java/build.xml.in java/build.xml @ONLY)
 
 add_subdirectory(lib)
 add_subdirectory(nexec)
