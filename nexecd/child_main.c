@@ -190,13 +190,47 @@ do_exec(struct child* child, struct tokenizer* tokenizer)
     start_master(child->ssl, nargs, args, envp);
 }
 
+static void
+read_request(struct child* child, char* buf, size_t bufsize)
+{
+    read_line(child->ssl, buf, bufsize);
+    syslog(LOG_INFO, "request: %s", buf);
+    die_if_invalid_line(buf);
+}
+
+static bool
+handle_login(struct child* child)
+{
+    char line[4096];
+    read_request(child, line, sizeof(line));
+
+    SSL* ssl = child->ssl;
+
+    struct tokenizer tokenizer;
+    tokenizer.p = line;
+    const char *cmd = get_next_token(&tokenizer);
+    if (strcmp(cmd, "LOGIN") != 0) {
+        write_ng(ssl, "you must login");
+        return false;
+    }
+    const char *name = get_next_token(&tokenizer);
+    const char *password = get_next_token(&tokenizer);
+    if ((strcmp(name, "anonymous") != 0)
+            || (strcmp(password, "anonymous") != 0)) {
+        write_ng(ssl, "login failed");
+        return false;
+    }
+
+    write_ok(ssl);
+
+    return true;
+}
+
 static bool
 handle_request(struct child* child)
 {
     char line[4096];
-    read_line(child->ssl, line, sizeof(line));
-    syslog(LOG_INFO, "request: %s", line);
-    die_if_invalid_line(line);
+    read_request(child, line, sizeof(line));
 
     struct tokenizer tokenizer;
     tokenizer.p = line;
@@ -244,6 +278,8 @@ child_main(struct config* config, int fd)
     child.env = NULL;
     child.ssl = ssl;
 
+    while (!handle_login(&child)) {
+    }
     while (!handle_request(&child)) {
     }
 
