@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.nio.channels.Pipe;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.net.ssl.SSLContext;
 
+import jp.gr.java_conf.neko_daisuki.fsyscall.io.SSLFrontEnd;
 import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallReadableChannel;
 import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallWritableChannel;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
@@ -20,6 +23,7 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Slave;
 import jp.gr.java_conf.neko_daisuki.fsyscall.util.NormalizedPath;
+import jp.gr.java_conf.neko_daisuki.fsyscall.util.SSLUtil;
 
 public class NexecClient {
 
@@ -75,7 +79,7 @@ public class NexecClient {
 
     private Application mApplication;
 
-    public int run(String server, int port, String[] args,
+    public int run(String server, int port, SSLContext context, String[] args,
                    NormalizedPath currentDirectory, InputStream stdin,
                    OutputStream stdout, OutputStream stderr, Environment env,
                    Permissions permissions, Links links,
@@ -84,10 +88,15 @@ public class NexecClient {
                           IOException {
         InetSocketAddress address = new InetSocketAddress(server, port);
         SocketChannel sock = SocketChannel.open(address);
+        Pipe front2back = Pipe.open();
+        Pipe back2front = Pipe.open();
+        SSLFrontEnd sslFrontEnd = new SSLFrontEnd(context, sock,
+                                                  back2front.source(),
+                                                  front2back.sink());
         try {
             ChannelPair pair = new ChannelPair();
-            pair.in = new SyscallReadableChannel(sock);
-            pair.out = new SyscallWritableChannel(sock);
+            pair.in = new SyscallReadableChannel(front2back.source());
+            pair.out = new SyscallWritableChannel(back2front.sink());
 
             sendEnvironment(pair, env);
             doExec(pair, args);
@@ -101,7 +110,7 @@ public class NexecClient {
                     permissions, links, listener, resourceDirectory);
         }
         finally {
-            sock.close();
+            sslFrontEnd.join();
         }
     }
 
@@ -122,8 +131,11 @@ public class NexecClient {
         Permissions perm = new Permissions(true);
         Links links = new Links();
         try {
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, null, null);
+
             client.run(
-                    server, port, params, new NormalizedPath(args[2]),
+                    server, port, context, params, new NormalizedPath(args[2]),
                     stdin, stdout, stderr,
                     env, perm, links, null, "/tmp");
         }
