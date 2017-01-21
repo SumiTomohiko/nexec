@@ -1,3 +1,4 @@
+*.core
 *.log
 .gdb_history
 /Makefile
