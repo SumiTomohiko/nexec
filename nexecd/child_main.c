@@ -24,35 +24,6 @@ struct child {
 	SSL		*ssl;
 };
 
-struct tokenizer {
-	char	*p;
-};
-
-static void
-skip_whitespace(struct tokenizer *tokenizer)
-{
-	char *p;
-	for (p = tokenizer->p; (*p != '\0') && (*p == ' '); p++)
-		;
-	tokenizer->p = p;
-}
-
-static char *
-get_next_token(struct tokenizer *tokenizer)
-{
-	char *begin, *p;
-
-	skip_whitespace(tokenizer);
-
-	begin = tokenizer->p;
-	for (p = begin; (*p != '\0') && (*p != ' '); p++)
-		;
-	tokenizer->p = p + (*p == '\0' ? 0 : 1);
-	*p = '\0';
-
-	return (begin);
-}
-
 static void
 die_if_invalid_byte(char c)
 {
@@ -109,12 +80,12 @@ find_mapping(struct config *config, const char *name)
 }
 
 static char *
-copy_next_token(struct tokenizer *tokenizer)
+copy_next_token(struct cmdlexer_scanner *scanner)
 {
-	const char *s;
-	char *t;
+	char *s, *t;
 
-	s = get_next_token(tokenizer);
+	if (cmdlexer_next_string(scanner, &s) != SCANNER_SUCCESS)
+		return (NULL);
 	t = (char *)malloc(strlen(s) + 1);
 	assert(t != NULL);
 	strcpy(t, s);
@@ -122,18 +93,32 @@ copy_next_token(struct tokenizer *tokenizer)
 	return (t);
 }
 
-static void
-do_set_env(struct child *child, struct tokenizer *tokenizer)
+static int
+do_set_env(struct child *child, struct cmdlexer_scanner *scanner)
 {
 	struct env *penv;
+	const char *s;
 
 	penv = alloc_env_or_die();
 	penv->next = child->env;
-	penv->name = copy_next_token(tokenizer);
-	penv->value = copy_next_token(tokenizer);
+	s = copy_next_token(scanner);
+	if (s == NULL)
+		goto error;
+	penv->name = s;
+	s = copy_next_token(scanner);
+	if (s == NULL)
+		goto error;
+	penv->value = s;
 	child->env = penv;
 
 	write_ok(child->ssl);
+
+	return (0);
+
+error:
+	write_ng(child->ssl, "cannot do SET_ENV");
+
+	return (-1);
 }
 
 static int
@@ -161,36 +146,42 @@ format_env(const char *name, const char *value)
 	return (s);
 }
 
-static void
-do_exec(struct child *child, struct tokenizer *tokenizer)
+static int
+do_exec(struct child *child, struct cmdlexer_scanner *scanner)
 {
 #define MAX_NARGS 64
 	struct env *penv;
 	int i, nargs, nenv;
 	char *args[MAX_NARGS], **envp, *exe, *p;
 
+#define	NEXT_STRING	do {						\
+	if (cmdlexer_next_string(scanner, &p) != SCANNER_SUCCESS) {	\
+		write_ng(child->ssl, "cannot read arguments");		\
+		return (-1);						\
+	}								\
+} while (0)
 	nargs = 0;
-	p = get_next_token(tokenizer);
+	NEXT_STRING;
 	while ((0 < strlen(p)) && (nargs < MAX_NARGS)) {
 		args[nargs] = p;
 		nargs++;
-
-		p = get_next_token(tokenizer);
+		NEXT_STRING;
 	}
+#undef	NEXT_STRING
 	if (nargs == MAX_NARGS) {
 		write_ng(child->ssl, "too many arguments");
-		return;
+		return (-1);
 	}
 #undef MAX_NARGS
 	if (nargs == 0) {
 		write_ng(child->ssl, "no arguments given");
-		return;
+		return (-1);
 	}
 
 	exe = find_mapping(child->config, args[0]);
 	if (exe == NULL) {
 		write_ng(child->ssl, "command not found");
-		return;
+		return (-1);
 	}
 	args[0] = exe;		/* This is not beautiful. */
 
@@ -205,6 +196,8 @@ do_exec(struct child *child, struct tokenizer *tokenizer)
 
 	write_ok(child->ssl);
 	start_master(child->ssl, nargs, args, envp);
+
+	return (0);
 }
 
 static void
@@ -220,22 +213,34 @@ static bool
 handle_login(struct child *child)
 {
 	SSL *ssl;
-	struct tokenizer tokenizer;
-	const char *cmd, *name, *password;
-	char line[4096];
+	struct cmdlexer_scanner *scanner;
+	enum command command;
+	char line[4096], *name, *password;
+
+	scanner = cmdlexer_create_scanner();
 
 	read_request(child, line, sizeof(line));
+	cmdlexer_scan(scanner, line);
 
 	ssl = child->ssl;
 
-	tokenizer.p = line;
-	cmd = get_next_token(&tokenizer);
-	if (strcmp(cmd, "LOGIN") != 0) {
+	if (cmdlexer_next_command(scanner, &command) != SCANNER_SUCCESS) {
+		write_ng(ssl, "unknown command");
+		return (false);
+	}
+	if (command != CMD_LOGIN) {
 		write_ng(ssl, "you must login");
 		return (false);
 	}
-	name = get_next_token(&tokenizer);
-	password = get_next_token(&tokenizer);
+
+	if (cmdlexer_next_string(scanner, &name) != SCANNER_SUCCESS) {
+		write_ng(ssl, "cannot read name");
+		return (false);
+	}
+	if (cmdlexer_next_string(scanner, &password) != SCANNER_SUCCESS) {
+		write_ng(ssl, "cannot read password");
+		return (false);
+	}
 	if ((strcmp(name, "anonymous") != 0)
 			|| (strcmp(password, "anonymous") != 0)) {
 		write_ng(ssl, "login failed");
@@ -250,22 +255,28 @@ handle_login(struct child *child)
 static bool
 handle_request(struct child *child)
 {
-	struct tokenizer tokenizer;
-	char line[4096], *token;
+	struct cmdlexer_scanner *scanner;
+	enum command command;
+	char line[4096];
+
+	scanner = cmdlexer_create_scanner();
 
 	read_request(child, line, sizeof(line));
+	cmdlexer_scan(scanner, line);
 
-	tokenizer.p = line;
-	token = get_next_token(&tokenizer);
-	if (strcmp(token, "EXEC") == 0) {
-		do_exec(child, &tokenizer);
-		return (true);
-	}
-	if (strcmp(token, "SET_ENV") == 0) {
-		do_set_env(child, &tokenizer);
+	if (cmdlexer_next_command(scanner, &command) != SCANNER_SUCCESS)
+		goto error;
+	switch (command) {
+	case CMD_EXEC:
+		return (do_exec(child, scanner) == 0 ? true : false);
+	case CMD_SET_ENV:
+		do_set_env(child, scanner);
 		return (false);
+	default:
+		goto error;
 	}
 
+error:
 	write_ng(child->ssl, "unknown command");
 
 	return (false);

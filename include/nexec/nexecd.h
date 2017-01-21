@@ -36,4 +36,26 @@ void	memory_initialize();
 /* parser.y */
 void	parser_initialize(struct config *);
 
+/* cmdlexer.re */
+struct cmdlexer_scanner;
+
+enum command {
+	CMD_LOGIN = 42,
+	CMD_SET_ENV,
+	CMD_EXEC
+};
+
+enum scanner_status {
+	SCANNER_ERROR = 42,
+	SCANNER_SUCCESS,
+	SCANNER_END
+};
+
+struct cmdlexer_scanner	*cmdlexer_create_scanner();
+void			cmdlexer_scan(struct cmdlexer_scanner *, const char *);
+enum scanner_status	cmdlexer_next_command(struct cmdlexer_scanner *,
+					      enum command *);
+enum scanner_status	cmdlexer_next_string(struct cmdlexer_scanner *,
+					     char **);
+
 #endif
