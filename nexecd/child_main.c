@@ -151,18 +151,20 @@ do_exec(struct child *child, struct cmdlexer_scanner *scanner)
 {
 #define MAX_NARGS 64
 	struct env *penv;
+	enum scanner_status status;
 	int i, nargs, nenv;
 	char *args[MAX_NARGS], **envp, *exe, *p;
 
-#define	NEXT_STRING	do {						\
-	if (cmdlexer_next_string(scanner, &p) != SCANNER_SUCCESS) {	\
-		write_ng(child->ssl, "cannot read arguments");		\
-		return (-1);						\
-	}								\
+#define	NEXT_STRING	do {					\
+	status = cmdlexer_next_string(scanner, &p);		\
+	if (status == SCANNER_ERROR) {				\
+		write_ng(child->ssl, "cannot read arguments");	\
+		return (-1);					\
+	}							\
 } while (0)
 	nargs = 0;
 	NEXT_STRING;
-	while ((0 < strlen(p)) && (nargs < MAX_NARGS)) {
+	while ((status != SCANNER_END) && (nargs < MAX_NARGS)) {
 		args[nargs] = p;
 		nargs++;
 		NEXT_STRING;
