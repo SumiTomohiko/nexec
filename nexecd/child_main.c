@@ -153,7 +153,7 @@ do_exec(struct child *child, struct cmdlexer_scanner *scanner)
 	struct env *penv;
 	enum scanner_status status;
 	int i, nargs, nenv;
-	char *args[MAX_NARGS], **envp, *exe, *p;
+	char *args[MAX_NARGS], **envp, *exe, *p, path[MAXPATHLEN + 1];
 
 #define	NEXT_STRING	do {					\
 	status = cmdlexer_next_string(scanner, &p);		\
@@ -185,7 +185,11 @@ do_exec(struct child *child, struct cmdlexer_scanner *scanner)
 		write_ng(child->ssl, "command not found");
 		return (-1);
 	}
-	args[0] = exe;		/* This is not beautiful. */
+	if (exe[0] != '/')
+		snprintf(path, sizeof(path), "/usr/local/bin/%s", exe);
+	else
+		strncpy(path, exe, sizeof(path));
+	args[0] = path;
 
 	nenv = count_env(child->env);
 	envp = (char **)malloc(sizeof(char *) * (nenv + 1 /* PATH */ + 1 /* NULL */));
