@@ -61,7 +61,8 @@ section : T_MAPPING T_NEWLINE mappings T_NEWLINE T_END {
         ;
 mappings
         : mappings T_NEWLINE mapping {
-		$3->next = $1;
+		if ($3 != NULL)
+			$3->next = $1;
 		$$ = $3;
         }
         | mapping {
