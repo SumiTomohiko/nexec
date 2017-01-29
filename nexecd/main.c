@@ -184,7 +184,7 @@ nexecd_main(SSL_CTX *ctx)
 	struct config config;
 	struct addrinfo *ai, hints, *res;
 	struct sockaddr_storage storage;
-        struct sockaddr *addr;
+	struct sockaddr *addr;
 	socklen_t addrlen;
 	int ecode, fd, i, nsock, sock, *socks;
 	char host[NI_MAXHOST], serv[NI_MAXSERV];
