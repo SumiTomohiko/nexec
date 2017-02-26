@@ -105,6 +105,9 @@ public class NexecClient {
 
             sock.socket().setTcpNoDelay(true);
             mApplication = new Application();
+            synchronized (this) {
+                notifyAll();
+            }
             return mApplication.run(
                     pair.in, pair.out,
                     currentDirectory,
@@ -117,7 +120,17 @@ public class NexecClient {
     }
 
     public void cancel() {
-        mApplication.cancel();
+        try {
+            synchronized (this) {
+                while (mApplication == null) {
+                    wait();
+                }
+                mApplication.cancel();
+            }
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
