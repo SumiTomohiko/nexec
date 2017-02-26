@@ -9,7 +9,7 @@ option(FSYSCALL_DIR "fsyscall source directory" ${HOME}/projects/fsyscall2)
 
 set(CMAKE_VERBOSE_MAKEFILE true)
 set(CMAKE_C_COMPILER clang)
-set(CMAKE_C_FLAGS "-Wall -Wextra -Werror -O3")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra -Werror -O3")
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 include_directories(${INCLUDE_DIR} ${FSYSCALL_DIR}/include)
 configure_file(${INCLUDE_DIR}/nexec/config.h.in ${INCLUDE_DIR}/nexec/config.h)
