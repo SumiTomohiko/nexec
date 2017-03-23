@@ -19,7 +19,7 @@ import jp.gr.java_conf.neko_daisuki.fsyscall.io.SSLFrontEnd;
 import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallReadableChannel;
 import jp.gr.java_conf.neko_daisuki.fsyscall.io.SyscallWritableChannel;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Application;
-import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Links;
+import jp.gr.java_conf.neko_daisuki.fsyscall.slave.FileMap;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Permissions;
 import jp.gr.java_conf.neko_daisuki.fsyscall.slave.Slave;
 import jp.gr.java_conf.neko_daisuki.fsyscall.util.VirtualPath;
@@ -83,7 +83,7 @@ public class NexecClient {
                    String password, String[] args,
                    VirtualPath currentDirectory, InputStream stdin,
                    OutputStream stdout, OutputStream stderr, Environment env,
-                   Permissions permissions, Links links,
+                   Permissions permissions, FileMap fileMap,
                    Slave.Listener listener, String resourceDirectory)
                    throws ProtocolException, InterruptedException,
                           IOException {
@@ -112,7 +112,7 @@ public class NexecClient {
                     pair.in, pair.out,
                     currentDirectory,
                     stdin, stdout, stderr,
-                    permissions, links, listener, resourceDirectory);
+                    permissions, fileMap, listener, resourceDirectory);
         }
         finally {
             sslFrontEnd.join();
@@ -144,7 +144,7 @@ public class NexecClient {
         OutputStream stderr = System.err;
         Environment env = new Environment();
         Permissions perm = new Permissions(true);
-        Links links = new Links();
+        FileMap fileMap = new FileMap();
         try {
             SSLContext context = SSLContext.getInstance("TLS");
             context.init(null, null, null);
@@ -152,7 +152,7 @@ public class NexecClient {
             client.run(
                     server, port, context, "anonymous", "anonymous", params,
                     new VirtualPath(args[2]), stdin, stdout, stderr, env,
-                    perm, links, null, "/tmp");
+                    perm, fileMap, null, "/tmp");
         }
         catch (Exception e) {
             e.printStackTrace();
